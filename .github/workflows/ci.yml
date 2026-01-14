@@ -43,7 +43,7 @@ jobs:
 
       - name: Run Bandit (Security)
         run: |
-          uv run bandit -r src/
+          uv run bandit -c pyproject.toml -r src/
 
       - name: Run Safety (Dependency Vulnerabilities)
         run: |
