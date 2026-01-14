@@ -1,0 +1,48 @@
+# STT Clipboard Configuration - Mode Précision Maximale
+
+# Audio capture settings
+audio:
+  sample_rate: 16000
+  channels: 1
+  silence_duration: 1.2
+  min_speech_duration: 0.3
+  max_recording_duration: 30
+  blocksize: 512
+
+# Voice Activity Detection settings
+vad:
+  threshold: 0.5
+  min_silence_duration_ms: 300
+  speech_pad_ms: 300
+
+# Transcription settings - OPTIMISÉ POUR PRÉCISION
+transcription:
+  model_size: base             # Base model (meilleure précision que tiny)
+  language: fr
+  device: cpu
+  compute_type: int8
+  beam_size: 5                 # Beam search (meilleure qualité)
+  best_of: 5                   # Multiple candidates
+  temperature: 0.0
+  download_root: ./models
+
+# Punctuation post-processing
+punctuation:
+  enabled: true
+  french_spacing: true
+
+# Clipboard integration
+clipboard:
+  enabled: true
+  timeout: 2.0
+
+# Logging settings
+logging:
+  level: INFO
+  file: ./logs/stt-clipboard.log
+  format: "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan> - {message}"
+
+# Hotkey/trigger settings
+hotkey:
+  enabled: false
+  socket_path: /tmp/stt-clipboard.sock

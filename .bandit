@@ -1,0 +1,34 @@
+# Bandit security scanner configuration
+# This file documents security exceptions and their justifications
+
+[bandit]
+# Exclude directories
+exclude_dirs = /tests,/venv,/.venv
+
+# Skipped tests with justification
+skips = B101,B404,B603,B607
+
+# B101: assert_used
+#   Justification: Asserts are used appropriately in tests only
+#
+# B404: subprocess import
+#   Justification: Required for system integration (wl-clipboard, notify-send)
+#   All subprocess calls use fixed commands with no user input
+#
+# B603: subprocess_without_shell_equals_true
+#   Justification: We explicitly avoid shell=True for security
+#   All commands use array notation to prevent shell injection
+#
+# B607: start_process_with_partial_path
+#   Justification: System commands (wl-copy, wl-paste, notify-send)
+#   are in standard PATH and verified during installation
+
+# Additional suppressions via # nosec comments:
+#
+# B614: torch.hub.load (src/audio_capture.py)
+#   Justification: Loading from official Silero VAD repository
+#   Repository: snakers4/silero-vad (verified official source)
+#
+# B108: /tmp usage (src/config.py, src/hotkey.py)
+#   Justification: Unix socket in /tmp with 0600 permissions
+#   Standard practice for IPC, limited to user session only

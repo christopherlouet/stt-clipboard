@@ -1,0 +1,23 @@
+[Unit]
+Description=STT Clipboard - Offline Speech-to-Text Service
+After=pipewire.service pulseaudio.service sound.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/source/sideprojects/stt-clipboard
+ExecStart=/usr/bin/env uv run python -m src.main --daemon
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+Environment="PYTHONUNBUFFERED=1"
+Environment="PATH=%h/.local/share/mise/installs/uv/0.9.9/bin:%h/.local/bin:%h/bin:/usr/local/bin:/usr/bin:/bin"
+
+# Resource limits
+MemoryMax=2G
+CPUQuota=200%
+
+[Install]
+WantedBy=default.target

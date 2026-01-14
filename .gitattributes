@@ -1,0 +1,26 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Python files
+*.py text diff=python
+
+# Shell scripts
+*.sh text eol=lf
+
+# YAML files
+*.yaml text
+*.yml text
+
+# Markdown files
+*.md text
+
+# Config files
+*.toml text
+*.ini text
+*.cfg text
+
+# Ensure these files are always treated as binary
+*.wav binary
+*.mp3 binary
+*.flac binary
+*.so binary

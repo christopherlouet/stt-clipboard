@@ -1,0 +1,55 @@
+# STT Clipboard Configuration
+
+# Audio capture settings
+audio:
+  sample_rate: 16000           # Sample rate in Hz (16kHz is optimal for Whisper)
+  channels: 1                  # Mono audio
+  silence_duration: 1.2        # Seconds of silence to stop recording
+  min_speech_duration: 0.3     # Minimum speech duration to avoid false starts
+  max_recording_duration: 30   # Maximum recording duration in seconds
+  blocksize: 512               # Audio buffer size (lower = less latency)
+
+# Voice Activity Detection settings
+vad:
+  threshold: 0.5               # Speech detection threshold (0.0-1.0, higher = more strict)
+  min_silence_duration_ms: 300  # Minimum silence duration in milliseconds
+  speech_pad_ms: 300           # Speech padding in milliseconds
+
+# Transcription settings
+transcription:
+  model_size: base             # Model: tiny (rapide), base (précis), small, medium
+  language: ""                 # Language: "" (auto-detect FR/EN), "fr" (French only), "en" (English only)
+  device: cpu                  # Device: cpu or cuda
+  compute_type: int8           # Compute type: int8 (fastest), int16, float16, float32
+  beam_size: 5                 # Beam size for decoding (1 = greedy/rapide, 5 = précis)
+  best_of: 5                   # Number of candidates (plus = meilleure qualité)
+  temperature: 0.0             # Temperature for sampling (0 = deterministic)
+  download_root: ./models      # Directory for model files
+
+# Punctuation post-processing
+punctuation:
+  enabled: true                # Enable punctuation post-processing
+  french_spacing: true         # Apply French spacing for French text (auto-detected language)
+
+# Clipboard integration
+clipboard:
+  enabled: true                # Enable clipboard copy
+  timeout: 2.0                 # Timeout for clipboard operations in seconds
+
+# Auto-paste settings (for TRIGGER_PASTE mode)
+paste:
+  enabled: true                # Enable auto-paste functionality
+  timeout: 2.0                 # Timeout for paste operations in seconds
+  delay_ms: 100                # Delay between copy and paste (milliseconds)
+  preferred_tool: ydotool      # Paste tool: "auto", "xdotool", "ydotool", "wtype"
+
+# Logging settings
+logging:
+  level: INFO                  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: ./logs/stt-clipboard.log  # Log file path
+  format: "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan> - {message}"
+
+# Hotkey/trigger settings
+hotkey:
+  enabled: false               # Enable evdev hotkey (not needed with desktop keybind)
+  socket_path: /tmp/stt-clipboard.sock  # Unix socket path for trigger
