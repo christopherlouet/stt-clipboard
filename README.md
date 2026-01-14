@@ -90,14 +90,14 @@ This installs and enables the service to start automatically on login.
 2. Scroll to bottom and click **"+"** to add custom shortcut
 3. Set:
    - **Name**: STT Dictation
-   - **Command**: `/home/chris/source/sideprojects/stt-clipboard/scripts/trigger.sh`
+   - **Command**: `/path/to/stt-clipboard/scripts/trigger.sh`
    - **Shortcut**: Press your desired key combo (e.g., **Super+Shift+S**)
 
 #### KDE Plasma:
 
 1. Open **System Settings** → **Shortcuts** → **Custom Shortcuts**
 2. Right-click → **New** → **Global Shortcut** → **Command/URL**
-3. Set command to: `/home/chris/source/sideprojects/stt-clipboard/scripts/trigger.sh`
+3. Set command to: `/path/to/stt-clipboard/scripts/trigger.sh`
 4. Assign hotkey (e.g., **Meta+Shift+S**)
 
 ### 5. Usage
