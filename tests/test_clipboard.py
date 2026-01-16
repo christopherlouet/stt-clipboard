@@ -8,6 +8,7 @@ import pytest
 
 from src.clipboard import (
     ClipboardManager,
+    MacClipboardManager,
     WaylandClipboardManager,
     X11ClipboardManager,
     clear_clipboard,
@@ -15,46 +16,88 @@ from src.clipboard import (
     create_clipboard_manager,
     detect_session_type,
     get_clipboard_manager,
+    is_macos,
     paste_from_clipboard,
 )
+
+
+class TestIsMacos:
+    """Tests for is_macos function."""
+
+    @patch("platform.system")
+    def test_returns_true_on_darwin(self, mock_system: MagicMock):
+        """Test that is_macos returns True on Darwin (macOS)."""
+        mock_system.return_value = "Darwin"
+        assert is_macos() is True
+
+    @patch("platform.system")
+    def test_returns_false_on_linux(self, mock_system: MagicMock):
+        """Test that is_macos returns False on Linux."""
+        mock_system.return_value = "Linux"
+        assert is_macos() is False
+
+    @patch("platform.system")
+    def test_returns_false_on_windows(self, mock_system: MagicMock):
+        """Test that is_macos returns False on Windows."""
+        mock_system.return_value = "Windows"
+        assert is_macos() is False
 
 
 class TestDetectSessionType:
     """Tests for detect_session_type function."""
 
+    @patch("src.clipboard.is_macos")
+    def test_detects_macos(self, mock_is_macos: MagicMock):
+        """Test that macOS is detected when running on Darwin."""
+        mock_is_macos.return_value = True
+        result = detect_session_type()
+        assert result == "macos"
+
+    @patch("src.clipboard.is_macos")
     @patch.dict("os.environ", {"XDG_SESSION_TYPE": "wayland"}, clear=True)
-    def test_detects_wayland_from_xdg_session_type(self):
+    def test_detects_wayland_from_xdg_session_type(self, mock_is_macos: MagicMock):
         """Test that Wayland is detected from XDG_SESSION_TYPE."""
+        mock_is_macos.return_value = False
         result = detect_session_type()
         assert result == "wayland"
 
+    @patch("src.clipboard.is_macos")
     @patch.dict("os.environ", {"XDG_SESSION_TYPE": "x11"}, clear=True)
-    def test_detects_x11_from_xdg_session_type(self):
+    def test_detects_x11_from_xdg_session_type(self, mock_is_macos: MagicMock):
         """Test that X11 is detected from XDG_SESSION_TYPE."""
+        mock_is_macos.return_value = False
         result = detect_session_type()
         assert result == "x11"
 
+    @patch("src.clipboard.is_macos")
     @patch.dict("os.environ", {"XDG_SESSION_TYPE": "WAYLAND"}, clear=True)
-    def test_handles_uppercase_wayland(self):
+    def test_handles_uppercase_wayland(self, mock_is_macos: MagicMock):
         """Test that uppercase WAYLAND is handled."""
+        mock_is_macos.return_value = False
         result = detect_session_type()
         assert result == "wayland"
 
+    @patch("src.clipboard.is_macos")
     @patch.dict("os.environ", {"XDG_SESSION_TYPE": "", "WAYLAND_DISPLAY": "wayland-0"}, clear=True)
-    def test_fallback_to_wayland_display(self):
+    def test_fallback_to_wayland_display(self, mock_is_macos: MagicMock):
         """Test fallback to WAYLAND_DISPLAY env var."""
+        mock_is_macos.return_value = False
         result = detect_session_type()
         assert result == "wayland"
 
+    @patch("src.clipboard.is_macos")
     @patch.dict("os.environ", {"XDG_SESSION_TYPE": "", "DISPLAY": ":0"}, clear=True)
-    def test_fallback_to_display(self):
+    def test_fallback_to_display(self, mock_is_macos: MagicMock):
         """Test fallback to DISPLAY env var for X11."""
+        mock_is_macos.return_value = False
         result = detect_session_type()
         assert result == "x11"
 
+    @patch("src.clipboard.is_macos")
     @patch.dict("os.environ", {"XDG_SESSION_TYPE": ""}, clear=True)
-    def test_returns_unknown_when_no_session_detected(self):
+    def test_returns_unknown_when_no_session_detected(self, mock_is_macos: MagicMock):
         """Test that 'unknown' is returned when no session is detected."""
+        mock_is_macos.return_value = False
         result = detect_session_type()
         assert result == "unknown"
 
@@ -462,6 +505,183 @@ class TestX11ClipboardManager:
         assert result is False
 
 
+class TestMacClipboardManager:
+    """Tests for MacClipboardManager class."""
+
+    @patch("shutil.which")
+    def test_raises_error_when_pbcopy_not_found(self, mock_which: MagicMock):
+        """Test that RuntimeError is raised when pbcopy is not available."""
+        mock_which.return_value = None
+
+        with pytest.raises(RuntimeError, match="pbcopy not found"):
+            MacClipboardManager()
+
+    @patch("shutil.which")
+    def test_initializes_with_default_timeout(self, mock_which: MagicMock):
+        """Test initialization with default timeout."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+
+        manager = MacClipboardManager()
+
+        assert manager.timeout == 2.0
+
+    @patch("shutil.which")
+    def test_initializes_with_custom_timeout(self, mock_which: MagicMock):
+        """Test initialization with custom timeout."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+
+        manager = MacClipboardManager(timeout=5.0)
+
+        assert manager.timeout == 5.0
+
+    @patch("shutil.which")
+    @patch("src.clipboard.subprocess.run")
+    def test_copy_returns_true_on_success(self, mock_run: MagicMock, mock_which: MagicMock):
+        """Test that copy returns True on success."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+        mock_run.return_value = MagicMock(returncode=0)
+
+        manager = MacClipboardManager()
+        result = manager.copy("test text")
+
+        assert result is True
+        mock_run.assert_called_once()
+        call_args = mock_run.call_args
+        assert call_args[0][0] == ["pbcopy"]
+
+    @patch("shutil.which")
+    def test_copy_returns_false_for_empty_text(self, mock_which: MagicMock):
+        """Test that copy returns False for empty text."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+
+        manager = MacClipboardManager()
+        result = manager.copy("")
+
+        assert result is False
+
+    @patch("shutil.which")
+    @patch("src.clipboard.subprocess.run")
+    def test_copy_returns_false_on_error(self, mock_run: MagicMock, mock_which: MagicMock):
+        """Test that copy returns False on subprocess error."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+        mock_run.return_value = MagicMock(returncode=1, stderr=b"error message")
+
+        manager = MacClipboardManager()
+        result = manager.copy("test")
+
+        assert result is False
+
+    @patch("shutil.which")
+    @patch("src.clipboard.subprocess.run")
+    def test_copy_returns_false_on_timeout(self, mock_run: MagicMock, mock_which: MagicMock):
+        """Test that copy returns False on timeout."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="pbcopy", timeout=2.0)
+
+        manager = MacClipboardManager()
+        result = manager.copy("test")
+
+        assert result is False
+
+    @patch("shutil.which")
+    @patch("src.clipboard.subprocess.run")
+    def test_copy_returns_false_on_exception(self, mock_run: MagicMock, mock_which: MagicMock):
+        """Test that copy returns False on general exception."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+        mock_run.side_effect = OSError("Failed to run copy")
+
+        manager = MacClipboardManager()
+        result = manager.copy("test")
+
+        assert result is False
+
+    @patch("shutil.which")
+    @patch("src.clipboard.subprocess.run")
+    def test_paste_returns_text_on_success(self, mock_run: MagicMock, mock_which: MagicMock):
+        """Test that paste returns text on success."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+        mock_run.return_value = MagicMock(returncode=0, stdout="pasted text")
+
+        manager = MacClipboardManager()
+        result = manager.paste()
+
+        assert result == "pasted text"
+        call_args = mock_run.call_args[0][0]
+        assert "pbpaste" in call_args
+
+    @patch("shutil.which")
+    @patch("src.clipboard.subprocess.run")
+    def test_paste_returns_none_on_error(self, mock_run: MagicMock, mock_which: MagicMock):
+        """Test that paste returns None on subprocess error."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+        mock_run.return_value = MagicMock(returncode=1, stderr="error message")
+
+        manager = MacClipboardManager()
+        result = manager.paste()
+
+        assert result is None
+
+    @patch("shutil.which")
+    @patch("src.clipboard.subprocess.run")
+    def test_paste_returns_none_on_timeout(self, mock_run: MagicMock, mock_which: MagicMock):
+        """Test that paste returns None on timeout."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="pbpaste", timeout=2.0)
+
+        manager = MacClipboardManager()
+        result = manager.paste()
+
+        assert result is None
+
+    @patch("shutil.which")
+    @patch("src.clipboard.subprocess.run")
+    def test_paste_returns_none_on_exception(self, mock_run: MagicMock, mock_which: MagicMock):
+        """Test that paste returns None on general exception."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+        mock_run.side_effect = OSError("Failed to run paste")
+
+        manager = MacClipboardManager()
+        result = manager.paste()
+
+        assert result is None
+
+    @patch("shutil.which")
+    @patch("src.clipboard.subprocess.run")
+    def test_clear_returns_true_on_success(self, mock_run: MagicMock, mock_which: MagicMock):
+        """Test that clear returns True on success."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+        mock_run.return_value = MagicMock(returncode=0)
+
+        manager = MacClipboardManager()
+        result = manager.clear()
+
+        assert result is True
+
+    @patch("shutil.which")
+    @patch("src.clipboard.subprocess.run")
+    def test_clear_returns_false_on_error(self, mock_run: MagicMock, mock_which: MagicMock):
+        """Test that clear returns False on error."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+        mock_run.return_value = MagicMock(returncode=1, stderr=b"error message")
+
+        manager = MacClipboardManager()
+        result = manager.clear()
+
+        assert result is False
+
+    @patch("shutil.which")
+    @patch("src.clipboard.subprocess.run")
+    def test_clear_returns_false_on_exception(self, mock_run: MagicMock, mock_which: MagicMock):
+        """Test that clear returns False on general exception."""
+        mock_which.return_value = "/usr/bin/pbcopy"
+        mock_run.side_effect = OSError("Failed to clear")
+
+        manager = MacClipboardManager()
+        result = manager.clear()
+
+        assert result is False
+
+
 class TestClipboardManager:
     """Tests for ClipboardManager class (auto-detect wrapper)."""
 
@@ -545,6 +765,21 @@ class TestCreateClipboardManager:
     """Tests for create_clipboard_manager function."""
 
     @patch("src.clipboard.detect_session_type")
+    @patch("src.clipboard.MacClipboardManager")
+    def test_creates_mac_manager_for_macos_session(
+        self, mock_mac_class: MagicMock, mock_detect: MagicMock
+    ):
+        """Test that MacClipboardManager is created for macOS session."""
+        mock_detect.return_value = "macos"
+        mock_manager = MagicMock()
+        mock_mac_class.return_value = mock_manager
+
+        result = create_clipboard_manager()
+
+        assert result == mock_manager
+        mock_mac_class.assert_called_once_with(timeout=2.0)
+
+    @patch("src.clipboard.detect_session_type")
     @patch("src.clipboard.WaylandClipboardManager")
     def test_creates_wayland_manager_for_wayland_session(
         self, mock_wayland_class: MagicMock, mock_detect: MagicMock
@@ -574,13 +809,15 @@ class TestCreateClipboardManager:
         assert result == mock_manager
         mock_x11_class.assert_called_once_with(timeout=2.0)
 
+    @patch("src.clipboard.is_macos")
     @patch("src.clipboard.detect_session_type")
     @patch("src.clipboard.WaylandClipboardManager")
-    def test_tries_wayland_first_for_unknown_session(
-        self, mock_wayland_class: MagicMock, mock_detect: MagicMock
+    def test_tries_wayland_first_for_unknown_session_on_linux(
+        self, mock_wayland_class: MagicMock, mock_detect: MagicMock, mock_is_macos: MagicMock
     ):
-        """Test that Wayland is tried first for unknown session."""
+        """Test that Wayland is tried first for unknown session on Linux."""
         mock_detect.return_value = "unknown"
+        mock_is_macos.return_value = False
         mock_manager = MagicMock()
         mock_wayland_class.return_value = mock_manager
 
@@ -589,6 +826,24 @@ class TestCreateClipboardManager:
         assert result == mock_manager
         mock_wayland_class.assert_called_once()
 
+    @patch("src.clipboard.is_macos")
+    @patch("src.clipboard.detect_session_type")
+    @patch("src.clipboard.MacClipboardManager")
+    def test_tries_mac_first_for_unknown_session_on_macos(
+        self, mock_mac_class: MagicMock, mock_detect: MagicMock, mock_is_macos: MagicMock
+    ):
+        """Test that Mac clipboard is tried first for unknown session on macOS."""
+        mock_detect.return_value = "unknown"
+        mock_is_macos.return_value = True
+        mock_manager = MagicMock()
+        mock_mac_class.return_value = mock_manager
+
+        result = create_clipboard_manager()
+
+        assert result == mock_manager
+        mock_mac_class.assert_called_once()
+
+    @patch("src.clipboard.is_macos")
     @patch("src.clipboard.detect_session_type")
     @patch("src.clipboard.WaylandClipboardManager")
     @patch("src.clipboard.X11ClipboardManager")
@@ -597,9 +852,11 @@ class TestCreateClipboardManager:
         mock_x11_class: MagicMock,
         mock_wayland_class: MagicMock,
         mock_detect: MagicMock,
+        mock_is_macos: MagicMock,
     ):
         """Test that X11 is used as fallback for unknown session."""
         mock_detect.return_value = "unknown"
+        mock_is_macos.return_value = False
         mock_wayland_class.side_effect = RuntimeError("wl-copy not found")
         mock_manager = MagicMock()
         mock_x11_class.return_value = mock_manager
@@ -609,21 +866,47 @@ class TestCreateClipboardManager:
         assert result == mock_manager
         mock_x11_class.assert_called_once()
 
+    @patch("src.clipboard.is_macos")
     @patch("src.clipboard.detect_session_type")
     @patch("src.clipboard.WaylandClipboardManager")
     @patch("src.clipboard.X11ClipboardManager")
-    def test_raises_error_when_no_manager_available(
+    def test_raises_error_when_no_manager_available_on_linux(
         self,
         mock_x11_class: MagicMock,
         mock_wayland_class: MagicMock,
         mock_detect: MagicMock,
+        mock_is_macos: MagicMock,
     ):
-        """Test that RuntimeError is raised when no manager is available."""
+        """Test that RuntimeError is raised when no manager is available on Linux."""
         mock_detect.return_value = "unknown"
+        mock_is_macos.return_value = False
         mock_wayland_class.side_effect = RuntimeError("wl-copy not found")
         mock_x11_class.side_effect = RuntimeError("xclip not found")
 
         with pytest.raises(RuntimeError, match="Could not initialize clipboard manager"):
+            create_clipboard_manager()
+
+    @patch("src.clipboard.is_macos")
+    @patch("src.clipboard.detect_session_type")
+    @patch("src.clipboard.MacClipboardManager")
+    @patch("src.clipboard.WaylandClipboardManager")
+    @patch("src.clipboard.X11ClipboardManager")
+    def test_raises_error_when_no_manager_available_on_macos(
+        self,
+        mock_x11_class: MagicMock,
+        mock_wayland_class: MagicMock,
+        mock_mac_class: MagicMock,
+        mock_detect: MagicMock,
+        mock_is_macos: MagicMock,
+    ):
+        """Test that RuntimeError is raised when no manager is available on macOS."""
+        mock_detect.return_value = "unknown"
+        mock_is_macos.return_value = True
+        mock_mac_class.side_effect = RuntimeError("pbcopy not found")
+        mock_wayland_class.side_effect = RuntimeError("wl-copy not found")
+        mock_x11_class.side_effect = RuntimeError("xclip not found")
+
+        with pytest.raises(RuntimeError, match="Could not initialize clipboard manager on macOS"):
             create_clipboard_manager()
 
 
