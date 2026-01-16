@@ -7,24 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-01-16
+
 ### Added
-- Comprehensive test suite with 86% code coverage (339 tests)
+- **macOS Auto-Paste support** via `osascript` and System Events (Cmd+V)
+- **Multi-platform CI testing**: Debian (bookworm), Arch Linux
+- **Multi-platform support**: macOS, Ubuntu, Fedora with auto-detection
+- `MacPaster` class for macOS keyboard simulation
+- Comprehensive test suite with 87% code coverage (371 tests)
 - Tests for all major modules:
   - `test_main.py` - STTService, setup_logging, main() function
   - `test_transcription.py` - WhisperTranscriber, transcribe_with_timestamps
-  - `test_clipboard.py` - Wayland/X11 managers, error handling
+  - `test_clipboard.py` - Wayland/X11/macOS managers, error handling
   - `test_hotkey.py` - TriggerServer/Client, socket handling
   - `test_config.py` - Configuration loading and validation
   - `test_notifications.py` - Desktop notification functions
   - `test_punctuation.py` - French/English punctuation rules
   - `test_audio_capture.py` - AudioRecorder with VAD
-  - `test_autopaste.py` - Xdotool/Ydotool/Wtype pasters
+  - `test_autopaste.py` - Xdotool/Ydotool/Wtype/MacPaster
 - CI badges in README (CI status, coverage)
 - Ruff linter badge
+- pacman support in `install_deps.sh` for Arch Linux
 
 ### Changed
-- Improved test coverage from 33% to 86%
+- Improved test coverage from 33% to 87%
 - Enhanced error handling in clipboard and hotkey modules
+- Updated README with platform support matrix (5 tested + 4 supported distributions)
+- `preferred_tool` config now supports `"osascript"` option
+
+### Platform Support
+| Platform | Status |
+|----------|--------|
+| Ubuntu | ✅ Tested |
+| Debian | ✅ Tested |
+| Fedora | ✅ Tested |
+| Arch Linux | ✅ Tested |
+| macOS | ✅ Tested |
 
 ## [1.0.0] - 2025-01-14
 
@@ -91,6 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/christopherlouet/stt-clipboard/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/christopherlouet/stt-clipboard/releases/tag/v0.1.0
