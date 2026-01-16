@@ -1,6 +1,8 @@
 """Auto-paste functionality for simulating keyboard paste operations."""
 
 import os
+import platform
+import shutil
 import subprocess
 from abc import ABC, abstractmethod
 
@@ -229,6 +231,54 @@ class WtypePaster(BaseAutoPaster):
             return False
 
 
+class MacPaster(BaseAutoPaster):
+    """Auto-paste implementation using osascript (macOS)."""
+
+    def is_available(self) -> bool:
+        """Check if osascript is available and we're on macOS."""
+        # Check if we're on macOS
+        if platform.system() != "Darwin":
+            return False
+
+        # Check if osascript is available (should always be on macOS)
+        return shutil.which("osascript") is not None
+
+    def paste(self) -> bool:
+        """Simulate Cmd+V using osascript and System Events.
+
+        Note: This requires Accessibility permissions to be granted to the
+        terminal or application running this code. Users need to enable this
+        in System Preferences → Security & Privacy → Privacy → Accessibility.
+        """
+        try:
+            result = subprocess.run(
+                [
+                    "osascript",
+                    "-e",
+                    'tell application "System Events" to keystroke "v" using command down',
+                ],
+                capture_output=True,
+                timeout=self.timeout,
+                check=False,
+            )
+
+            if result.returncode == 0:
+                logger.debug("osascript paste successful")
+                return True
+            else:
+                stderr = result.stderr.decode("utf-8", errors="ignore").strip()
+                logger.error(f"osascript paste failed: {stderr}")
+                return False
+
+        except subprocess.TimeoutExpired:
+            logger.error(f"osascript paste timed out after {self.timeout}s")
+            return False
+
+        except Exception as e:
+            logger.error(f"osascript paste error: {e}")
+            return False
+
+
 def _detect_available_tools(timeout: float = 2.0) -> list[BaseAutoPaster]:
     """Detect which paste tools are available on the system.
 
@@ -239,6 +289,12 @@ def _detect_available_tools(timeout: float = 2.0) -> list[BaseAutoPaster]:
         List of available paste tool instances, in order of preference
     """
     available: list[BaseAutoPaster] = []
+
+    # Try osascript (macOS) - check first as it's platform-specific
+    mac = MacPaster(timeout)
+    if mac.is_available():
+        available.append(mac)
+        logger.debug("osascript is available (macOS)")
 
     # Try xdotool (X11)
     xdotool = XdotoolPaster(timeout)
@@ -268,7 +324,7 @@ def create_autopaster(
     """Create an auto-paster instance with automatic tool detection.
 
     Args:
-        preferred_tool: Preferred tool ("auto", "xdotool", "ydotool", "wtype")
+        preferred_tool: Preferred tool ("auto", "osascript", "xdotool", "ydotool", "wtype")
         timeout: Timeout for paste operations
 
     Returns:
@@ -282,12 +338,13 @@ def create_autopaster(
     if not available_tools:
         raise RuntimeError(
             "No auto-paste tool available. Please install xdotool (X11), "
-            "ydotool (universal), or wtype (Wayland)"
+            "ydotool (universal), wtype (Wayland), or use osascript (macOS)"
         )
 
     # If preferred tool is specified, try to find it
     if preferred_tool != "auto":
         tool_map = {
+            "osascript": MacPaster,
             "xdotool": XdotoolPaster,
             "ydotool": YdotoolPaster,
             "wtype": WtypePaster,
@@ -317,7 +374,7 @@ def auto_paste(timeout: float = 2.0, preferred_tool: str = "auto") -> bool:
 
     Args:
         timeout: Timeout for paste operation
-        preferred_tool: Preferred tool ("auto", "xdotool", "ydotool", "wtype")
+        preferred_tool: Preferred tool ("auto", "osascript", "xdotool", "ydotool", "wtype")
 
     Returns:
         True if successful, False otherwise
