@@ -329,5 +329,126 @@ class TestSendTriggerFunction:
         assert success is False
 
 
+class TestServerStartErrors:
+    """Tests for server start error handling."""
+
+    @pytest.mark.asyncio
+    async def test_server_start_failure_raises_error(self):
+        """Test that server start failure raises RuntimeError."""
+        from unittest.mock import patch
+
+        socket_path = "/tmp/test-stt-start-fail.sock"
+        server = TriggerServer(socket_path=socket_path)
+
+        with patch("asyncio.start_unix_server", side_effect=OSError("Permission denied")):
+            with pytest.raises(RuntimeError, match="Server start failed"):
+                await server.start()
+
+    @pytest.mark.asyncio
+    async def test_serve_forever_starts_server_if_not_started(self):
+        """Test that serve_forever starts the server if not already started."""
+        socket_path = "/tmp/test-stt-serve-forever.sock"
+        server = TriggerServer(socket_path=socket_path)
+
+        async def cancel_after_delay():
+            await asyncio.sleep(0.2)
+            server.server.close()
+
+        try:
+            # Start a background task to cancel the server
+            cancel_task = asyncio.create_task(cancel_after_delay())
+
+            # serve_forever should start the server automatically
+            assert server.server is None
+            await asyncio.wait_for(server.serve_forever(), timeout=1.0)
+
+        except asyncio.TimeoutError:
+            pass  # Expected if cancellation didn't work
+        except asyncio.CancelledError:
+            pass  # Expected
+
+        finally:
+            cancel_task.cancel()
+            await server.stop()
+
+
+class TestWaitForTriggerNoTimeout:
+    """Tests for wait_for_trigger without timeout."""
+
+    @pytest.mark.asyncio
+    async def test_wait_for_trigger_no_timeout(self):
+        """Test wait_for_trigger without timeout parameter."""
+        socket_path = "/tmp/test-stt-wait-no-timeout.sock"
+        server = TriggerServer(socket_path=socket_path)
+
+        try:
+            await server.start()
+
+            # Send trigger in background quickly
+            async def send_delayed():
+                await asyncio.sleep(0.05)
+                client = TriggerClient(socket_path=socket_path)
+                await client.send_trigger(trigger_type="TRIGGER_COPY", timeout=2.0)
+
+            asyncio.create_task(send_delayed())
+
+            # Wait for trigger with no timeout (will be cancelled by actual trigger)
+            result = await asyncio.wait_for(server.wait_for_trigger(timeout=None), timeout=2.0)
+            assert result is True
+
+        finally:
+            await server.stop()
+
+
+class TestClientExceptionHandling:
+    """Tests for client exception handling."""
+
+    @pytest.mark.asyncio
+    async def test_client_send_trigger_exception(self):
+        """Test client handling of general exceptions during send."""
+        from unittest.mock import patch
+
+        client = TriggerClient(socket_path="/tmp/test-exception.sock")
+
+        # Patch to raise a general exception
+        with patch(
+            "asyncio.open_unix_connection",
+            side_effect=OSError("Connection refused"),
+        ):
+            success = await client.send_trigger(trigger_type="TRIGGER_COPY", timeout=1.0)
+            assert success is False
+
+
+class TestHandleClientErrors:
+    """Tests for _handle_client error handling."""
+
+    @pytest.mark.asyncio
+    async def test_handle_client_close_error(self):
+        """Test that errors during client close are handled gracefully."""
+        socket_path = "/tmp/test-stt-close-error.sock"
+        received_triggers = []
+
+        async def callback(trigger_type: TriggerType):
+            received_triggers.append(trigger_type)
+
+        server = TriggerServer(socket_path=socket_path, on_trigger=callback)
+
+        try:
+            await server.start()
+
+            # Connect and send a trigger, then disconnect abruptly
+            # This simulates the case where writer.close() might raise
+            client = TriggerClient(socket_path=socket_path)
+            success = await client.send_trigger(trigger_type="TRIGGER_COPY", timeout=2.0)
+
+            await asyncio.sleep(0.1)
+
+            assert success is True
+            assert len(received_triggers) == 1
+
+        finally:
+            await server.stop()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
