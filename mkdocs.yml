@@ -1,0 +1,92 @@
+site_name: STT Clipboard
+site_description: Privacy-focused, offline bilingual (French/English) speech-to-text for Linux and macOS
+site_author: Christopher LOUËT
+site_url: https://christopherlouet.github.io/stt-clipboard/
+
+repo_name: christopherlouet/stt-clipboard
+repo_url: https://github.com/christopherlouet/stt-clipboard
+
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quickstart.md
+      - Configuration: getting-started/configuration.md
+  - User Guide:
+      - Basic Usage: user-guide/basic-usage.md
+      - Auto-Paste: user-guide/auto-paste.md
+      - Service Management: user-guide/service-management.md
+      - Troubleshooting: user-guide/troubleshooting.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Components: architecture/components.md
+  - Development:
+      - Contributing: development/contributing.md
+      - Testing: development/testing.md
+      - Security: development/security.md
+  - API Reference:
+      - Modules: api/modules.md
+  - Changelog: changelog.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/christopherlouet/stt-clipboard
+  version:
+    provider: mike
+
+copyright: Copyright &copy; 2025 Christopher LOUËT - GPL-3.0 License
