@@ -399,5 +399,199 @@ class TestTranscribeAudio:
         mock_transcriber.transcribe.assert_called_once_with(audio)
 
 
+class TestTranscribeWithTimestamps:
+    """Tests for WhisperTranscriber.transcribe_with_timestamps method."""
+
+    @patch("src.transcription.Path.mkdir")
+    @patch("src.transcription.WhisperModel")
+    def test_transcribes_with_timestamps_successfully(
+        self, mock_whisper_model: MagicMock, mock_mkdir: MagicMock
+    ):
+        """Test successful transcription with timestamps."""
+        # Setup mock segment with timestamps
+        mock_segment = MagicMock()
+        mock_segment.text = " bonjour "
+        mock_segment.start = 0.5
+        mock_segment.end = 1.2
+        mock_info = MagicMock()
+        mock_info.language = "fr"
+
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = ([mock_segment], mock_info)
+        mock_whisper_model.return_value = mock_model
+
+        config = TranscriptionConfig()
+        transcriber = WhisperTranscriber(config)
+        audio = np.zeros(16000, dtype=np.float32)
+
+        result = transcriber.transcribe_with_timestamps(audio)
+
+        assert len(result) == 1
+        assert result[0] == ("bonjour", 0.5, 1.2)
+        # Verify word_timestamps=True was passed
+        call_kwargs = mock_model.transcribe.call_args[1]
+        assert call_kwargs["word_timestamps"] is True
+
+    @patch("src.transcription.Path.mkdir")
+    @patch("src.transcription.WhisperModel")
+    def test_transcribes_multiple_segments_with_timestamps(
+        self, mock_whisper_model: MagicMock, mock_mkdir: MagicMock
+    ):
+        """Test transcription with multiple segments."""
+        mock_segment1 = MagicMock()
+        mock_segment1.text = " hello "
+        mock_segment1.start = 0.0
+        mock_segment1.end = 0.8
+        mock_segment2 = MagicMock()
+        mock_segment2.text = " world "
+        mock_segment2.start = 1.0
+        mock_segment2.end = 1.5
+        mock_info = MagicMock()
+        mock_info.language = "en"
+
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = ([mock_segment1, mock_segment2], mock_info)
+        mock_whisper_model.return_value = mock_model
+
+        config = TranscriptionConfig()
+        transcriber = WhisperTranscriber(config)
+        audio = np.zeros(16000, dtype=np.float32)
+
+        result = transcriber.transcribe_with_timestamps(audio)
+
+        assert len(result) == 2
+        assert result[0] == ("hello", 0.0, 0.8)
+        assert result[1] == ("world", 1.0, 1.5)
+
+    @patch("src.transcription.Path.mkdir")
+    @patch("src.transcription.WhisperModel")
+    def test_loads_model_if_not_loaded_for_timestamps(
+        self, mock_whisper_model: MagicMock, mock_mkdir: MagicMock
+    ):
+        """Test that model is loaded if not already loaded."""
+        mock_segment = MagicMock()
+        mock_segment.text = "test"
+        mock_segment.start = 0.0
+        mock_segment.end = 1.0
+        mock_info = MagicMock()
+        mock_info.language = "en"
+
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = ([mock_segment], mock_info)
+        mock_whisper_model.return_value = mock_model
+
+        config = TranscriptionConfig()
+        transcriber = WhisperTranscriber(config)
+        audio = np.zeros(16000, dtype=np.float32)
+
+        # Should load model automatically
+        transcriber.transcribe_with_timestamps(audio)
+
+        mock_whisper_model.assert_called_once()
+
+    @patch("src.transcription.Path.mkdir")
+    @patch("src.transcription.WhisperModel")
+    def test_converts_int16_audio_for_timestamps(
+        self, mock_whisper_model: MagicMock, mock_mkdir: MagicMock
+    ):
+        """Test that int16 audio is converted to float32 for timestamps."""
+        mock_segment = MagicMock()
+        mock_segment.text = "test"
+        mock_segment.start = 0.0
+        mock_segment.end = 1.0
+        mock_info = MagicMock()
+        mock_info.language = "en"
+
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = ([mock_segment], mock_info)
+        mock_whisper_model.return_value = mock_model
+
+        config = TranscriptionConfig()
+        transcriber = WhisperTranscriber(config)
+
+        # Create int16 audio
+        audio = np.zeros(16000, dtype=np.int16)
+
+        transcriber.transcribe_with_timestamps(audio)
+
+        # The audio passed to transcribe should be float32
+        call_args = mock_model.transcribe.call_args[0]
+        assert call_args[0].dtype == np.float32
+
+    @patch("src.transcription.Path.mkdir")
+    @patch("src.transcription.WhisperModel")
+    def test_normalizes_audio_for_timestamps(
+        self, mock_whisper_model: MagicMock, mock_mkdir: MagicMock
+    ):
+        """Test that audio is normalized if values exceed [-1, 1]."""
+        mock_segment = MagicMock()
+        mock_segment.text = "test"
+        mock_segment.start = 0.0
+        mock_segment.end = 1.0
+        mock_info = MagicMock()
+        mock_info.language = "en"
+
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = ([mock_segment], mock_info)
+        mock_whisper_model.return_value = mock_model
+
+        config = TranscriptionConfig()
+        transcriber = WhisperTranscriber(config)
+
+        # Create audio with values > 1
+        audio = np.array([2.0, -2.0, 1.5], dtype=np.float32)
+
+        transcriber.transcribe_with_timestamps(audio)
+
+        # The audio passed should be normalized
+        call_args = mock_model.transcribe.call_args[0]
+        assert np.abs(call_args[0]).max() <= 1.0
+
+    @patch("src.transcription.Path.mkdir")
+    @patch("src.transcription.WhisperModel")
+    def test_raises_error_on_timestamps_failure(
+        self, mock_whisper_model: MagicMock, mock_mkdir: MagicMock
+    ):
+        """Test that RuntimeError is raised on timestamps transcription failure."""
+        mock_model = MagicMock()
+        mock_model.transcribe.side_effect = RuntimeError("Transcription failed")
+        mock_whisper_model.return_value = mock_model
+
+        config = TranscriptionConfig()
+        transcriber = WhisperTranscriber(config)
+        audio = np.zeros(16000, dtype=np.float32)
+
+        with pytest.raises(RuntimeError, match="Transcription failed"):
+            transcriber.transcribe_with_timestamps(audio)
+
+    @patch("src.transcription.Path.mkdir")
+    @patch("src.transcription.WhisperModel")
+    def test_handles_empty_language_for_auto_detect_timestamps(
+        self, mock_whisper_model: MagicMock, mock_mkdir: MagicMock
+    ):
+        """Test that empty language string triggers auto-detect for timestamps."""
+        mock_segment = MagicMock()
+        mock_segment.text = "test"
+        mock_segment.start = 0.0
+        mock_segment.end = 1.0
+        mock_info = MagicMock()
+        mock_info.language = "en"
+
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = ([mock_segment], mock_info)
+        mock_whisper_model.return_value = mock_model
+
+        # Empty string should trigger auto-detection
+        config = TranscriptionConfig(language="")
+        transcriber = WhisperTranscriber(config)
+        audio = np.zeros(16000, dtype=np.float32)
+
+        transcriber.transcribe_with_timestamps(audio)
+
+        # Check that language=None was passed to transcribe
+        call_kwargs = mock_model.transcribe.call_args[1]
+        assert call_kwargs["language"] is None
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
