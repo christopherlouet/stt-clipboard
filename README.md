@@ -1,6 +1,7 @@
 # STT Clipboard - Offline Speech-to-Text (French/English)
 
 [![CI](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml/badge.svg)](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-MkDocs-blue.svg)](https://christopherlouet.github.io/stt-clipboard/)
 [![Coverage](https://img.shields.io/badge/coverage-86%25-brightgreen.svg)](https://github.com/christopherlouet/stt-clipboard)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -597,6 +598,8 @@ Built with:
 - [xclip](https://github.com/astrand/xclip) - X11 clipboard
 
 ## Documentation
+
+**Full documentation:** [https://christopherlouet.github.io/stt-clipboard/](https://christopherlouet.github.io/stt-clipboard/)
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Development and contribution guidelines
 - [SECURITY.md](SECURITY.md) - Security policy and reporting
