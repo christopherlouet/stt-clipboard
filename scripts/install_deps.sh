@@ -2,7 +2,7 @@
 
 # STT Clipboard - Dependency Installation Script
 # This script installs all necessary system and Python dependencies using uv
-# Supports: Debian/Ubuntu (apt), RHEL/Fedora/CentOS (dnf/yum), and macOS (brew)
+# Supports: Debian/Ubuntu (apt), RHEL/Fedora/CentOS (dnf/yum), Arch Linux (pacman), and macOS (brew)
 
 set -e  # Exit on error
 
@@ -29,7 +29,11 @@ if [ "$OS_TYPE" = "Darwin" ]; then
     fi
 elif [ "$OS_TYPE" = "Linux" ]; then
     # Linux distribution detection
-    if command -v apt &> /dev/null; then
+    if command -v pacman &> /dev/null; then
+        PKG_MANAGER="pacman"
+        DISTRO_TYPE="arch"
+        echo "Detected: Arch Linux (pacman)"
+    elif command -v apt &> /dev/null; then
         PKG_MANAGER="apt"
         DISTRO_TYPE="debian"
         echo "Detected: Debian/Ubuntu (apt)"
@@ -42,8 +46,8 @@ elif [ "$OS_TYPE" = "Linux" ]; then
         DISTRO_TYPE="rhel"
         echo "Detected: RHEL/CentOS (yum)"
     else
-        echo "Error: No supported package manager found (apt, dnf, or yum)"
-        echo "This script supports Debian/Ubuntu and RHEL-based distributions"
+        echo "Error: No supported package manager found (pacman, apt, dnf, or yum)"
+        echo "This script supports Arch Linux, Debian/Ubuntu, and RHEL-based distributions"
         exit 1
     fi
 else
@@ -74,6 +78,15 @@ if [ "$DISTRO_TYPE" = "macos" ]; then
         python@3.12
     echo ""
     echo "NOTE: macOS uses pbcopy/pbpaste for clipboard (pre-installed)"
+elif [ "$DISTRO_TYPE" = "arch" ]; then
+    # Arch Linux packages
+    sudo pacman -Syu --noconfirm \
+        portaudio \
+        python \
+        python-pip \
+        base-devel \
+        wl-clipboard \
+        gnu-netcat
 elif [ "$DISTRO_TYPE" = "debian" ]; then
     # Debian/Ubuntu packages
     sudo apt update
@@ -110,6 +123,8 @@ if [ "$DISTRO_TYPE" != "macos" ]; then
         echo "X11 session detected, installing xclip for clipboard support..."
         if [ "$DISTRO_TYPE" = "debian" ]; then
             sudo apt install -y xclip
+        elif [ "$DISTRO_TYPE" = "arch" ]; then
+            sudo pacman -S --noconfirm xclip
         else
             sudo $PKG_MANAGER install -y xclip
         fi
@@ -120,6 +135,8 @@ if [ "$DISTRO_TYPE" != "macos" ]; then
         echo "Session type unknown, installing both wl-clipboard and xclip for compatibility..."
         if [ "$DISTRO_TYPE" = "debian" ]; then
             sudo apt install -y xclip
+        elif [ "$DISTRO_TYPE" = "arch" ]; then
+            sudo pacman -S --noconfirm xclip
         else
             sudo $PKG_MANAGER install -y xclip
         fi
@@ -137,6 +154,8 @@ if [ "$DISTRO_TYPE" != "macos" ]; then
         echo "Installing xdotool for X11 auto-paste..."
         if [ "$DISTRO_TYPE" = "debian" ]; then
             sudo apt install -y xdotool
+        elif [ "$DISTRO_TYPE" = "arch" ]; then
+            sudo pacman -S --noconfirm xdotool
         else
             sudo $PKG_MANAGER install -y xdotool
         fi
@@ -148,6 +167,8 @@ if [ "$DISTRO_TYPE" != "macos" ]; then
         echo "Installing ydotool for Wayland auto-paste..."
         if [ "$DISTRO_TYPE" = "debian" ]; then
             sudo apt install -y ydotool
+        elif [ "$DISTRO_TYPE" = "arch" ]; then
+            sudo pacman -S --noconfirm ydotool
         else
             sudo $PKG_MANAGER install -y ydotool
         fi
