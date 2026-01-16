@@ -1,6 +1,7 @@
-"""Clipboard integration for both Wayland and X11."""
+"""Clipboard integration for Wayland, X11, and macOS."""
 
 import os
+import platform
 import shutil
 import subprocess
 from abc import ABC, abstractmethod
@@ -288,18 +289,144 @@ class X11ClipboardManager(BaseClipboardManager):
             return False
 
 
-def detect_session_type() -> str:
-    """Detect if running under Wayland or X11.
+class MacClipboardManager(BaseClipboardManager):
+    """Clipboard manager for macOS using pbcopy/pbpaste."""
+
+    def __init__(self, timeout: float = 2.0):
+        """Initialize macOS clipboard manager.
+
+        Args:
+            timeout: Timeout in seconds for clipboard operations
+
+        Raises:
+            RuntimeError: If pbcopy is not available (not on macOS)
+        """
+        super().__init__(timeout)
+        if not shutil.which("pbcopy"):
+            raise RuntimeError(
+                "pbcopy not found. This clipboard manager is only available on macOS."
+            )
+        logger.debug("Using macOS clipboard (pbcopy/pbpaste)")
+
+    def copy(self, text: str) -> bool:
+        """Copy text to macOS clipboard.
+
+        Args:
+            text: Text to copy to clipboard
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not text:
+            logger.warning("Attempted to copy empty text to clipboard")
+            return False
+
+        try:
+            result = subprocess.run(
+                ["pbcopy"],
+                input=text.encode("utf-8"),
+                capture_output=True,
+                timeout=self.timeout,
+                check=False,
+            )
+
+            if result.returncode == 0:
+                logger.info(f"Copied {len(text)} characters to clipboard (macOS)")
+                return True
+            else:
+                stderr = result.stderr.decode("utf-8", errors="ignore").strip()
+                logger.error(f"pbcopy failed with code {result.returncode}: {stderr}")
+                return False
+
+        except subprocess.TimeoutExpired:
+            logger.error(f"pbcopy timed out after {self.timeout}s")
+            return False
+
+        except Exception as e:
+            logger.error(f"Failed to copy to clipboard: {e}")
+            return False
+
+    def paste(self) -> str | None:
+        """Get text from macOS clipboard.
+
+        Returns:
+            Clipboard text or None if failed
+        """
+        try:
+            result = subprocess.run(
+                ["pbpaste"], capture_output=True, text=True, timeout=self.timeout, check=False
+            )
+
+            if result.returncode == 0:
+                text = result.stdout
+                logger.debug(f"Retrieved {len(text)} characters from clipboard")
+                return text
+            else:
+                logger.error(f"pbpaste failed: {result.stderr}")
+                return None
+
+        except subprocess.TimeoutExpired:
+            logger.error(f"pbpaste timed out after {self.timeout}s")
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to paste from clipboard: {e}")
+            return None
+
+    def clear(self) -> bool:
+        """Clear the macOS clipboard.
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Clear by copying empty string
+            result = subprocess.run(
+                ["pbcopy"],
+                input=b"",
+                capture_output=True,
+                timeout=self.timeout,
+                check=False,
+            )
+
+            if result.returncode == 0:
+                logger.debug("Clipboard cleared")
+                return True
+            else:
+                logger.error(f"Failed to clear clipboard: {result.stderr.decode()}")
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to clear clipboard: {e}")
+            return False
+
+
+def is_macos() -> bool:
+    """Check if running on macOS.
 
     Returns:
-        "wayland", "x11", or "unknown"
+        True if on macOS (Darwin), False otherwise
     """
+    return platform.system() == "Darwin"
+
+
+def detect_session_type() -> str:
+    """Detect the display session type.
+
+    Returns:
+        "macos" for macOS, "wayland", "x11", or "unknown" for Linux
+    """
+    # Check for macOS first
+    if is_macos():
+        return "macos"
+
+    # Linux: check XDG_SESSION_TYPE
     session_type = os.environ.get("XDG_SESSION_TYPE", "").lower()
 
     if session_type in ["wayland", "x11"]:
         return session_type
 
-    # Fallback detection
+    # Fallback detection for Linux
     if os.environ.get("WAYLAND_DISPLAY"):
         return "wayland"
     elif os.environ.get("DISPLAY"):
@@ -315,7 +442,7 @@ def create_clipboard_manager(timeout: float = 2.0) -> BaseClipboardManager:
         timeout: Timeout for clipboard operations
 
     Returns:
-        ClipboardManager instance (Wayland or X11)
+        ClipboardManager instance (macOS, Wayland, or X11)
 
     Raises:
         RuntimeError: If session type cannot be determined or tools missing
@@ -324,23 +451,38 @@ def create_clipboard_manager(timeout: float = 2.0) -> BaseClipboardManager:
 
     logger.info(f"Detected session type: {session_type}")
 
-    if session_type == "wayland":
+    if session_type == "macos":
+        return MacClipboardManager(timeout=timeout)
+    elif session_type == "wayland":
         return WaylandClipboardManager(timeout=timeout)
     elif session_type == "x11":
         return X11ClipboardManager(timeout=timeout)
     else:
-        # Try both
+        # Try all managers in order of preference
+        # macOS first (if on Darwin), then Wayland, then X11
+        if is_macos():
+            try:
+                return MacClipboardManager(timeout=timeout)
+            except RuntimeError:
+                pass
+
         try:
             return WaylandClipboardManager(timeout=timeout)
         except RuntimeError:
             try:
                 return X11ClipboardManager(timeout=timeout)
             except RuntimeError:
-                raise RuntimeError(
-                    "Could not initialize clipboard manager.\n"
-                    "Please install wl-clipboard (Wayland) or xclip/xsel (X11):\n"
-                    "  sudo apt install wl-clipboard xclip"
-                )
+                if is_macos():
+                    raise RuntimeError(
+                        "Could not initialize clipboard manager on macOS.\n"
+                        "pbcopy/pbpaste should be available by default."
+                    )
+                else:
+                    raise RuntimeError(
+                        "Could not initialize clipboard manager.\n"
+                        "Please install wl-clipboard (Wayland) or xclip/xsel (X11):\n"
+                        "  sudo apt install wl-clipboard xclip"
+                    )
 
 
 # Backward compatibility - keep old class name

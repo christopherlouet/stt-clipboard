@@ -9,7 +9,7 @@
 [![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-Professional-grade, privacy-focused speech-to-text system with bilingual support (French/English) for Linux. Works on both Wayland and X11. Supports Debian/Ubuntu and RHEL-based distributions.
+Professional-grade, privacy-focused speech-to-text system with bilingual support (French/English) for Linux and macOS. Works on both Wayland and X11 on Linux, and uses native clipboard on macOS.
 
 ## Features
 
@@ -31,27 +31,28 @@ Professional-grade, privacy-focused speech-to-text system with bilingual support
 
 ## Requirements
 
-- **Linux Distribution** (auto-detected):
-  - Debian/Ubuntu (tested on Ubuntu 25)
-  - RHEL/Fedora/CentOS/Rocky Linux/AlmaLinux
+- **Operating System** (auto-detected):
+  - **Linux**: Debian/Ubuntu, Fedora, RHEL/CentOS/Rocky Linux/AlmaLinux
+  - **macOS**: macOS 12+ (Monterey or later)
 - Python 3.10+
-- Wayland or X11 session (auto-detected)
+- Wayland or X11 session on Linux (auto-detected), native on macOS
 - Working microphone
 - ~2GB free disk space (models + dependencies)
 
-### Supported Distributions
+### Supported Platforms
 
-The installation script automatically detects your distribution and uses the appropriate package manager:
+The installation script automatically detects your platform and uses the appropriate package manager:
 
-| Distribution | Package Manager | Status |
-|--------------|-----------------|--------|
-| Debian/Ubuntu | apt | ✅ Tested |
-| Fedora | dnf | ✅ Supported |
-| RHEL 8/9 | dnf | ✅ Supported |
-| CentOS Stream | dnf | ✅ Supported |
-| Rocky Linux | dnf | ✅ Supported |
-| AlmaLinux | dnf | ✅ Supported |
-| CentOS 7 | yum | ✅ Supported |
+| Platform | Package Manager | Status | Clipboard | Auto-Paste |
+|----------|-----------------|--------|-----------|------------|
+| **Ubuntu** | apt | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
+| **Fedora** | dnf | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
+| **macOS** | brew | ✅ Tested | pbcopy/pbpaste | Not yet supported |
+| RHEL 8/9 | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
+| CentOS Stream | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
+| Rocky Linux | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
+| AlmaLinux | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
+| CentOS 7 | yum | ✅ Supported | xclip | xdotool |
 
 ## Quick Start
 
@@ -62,9 +63,9 @@ The installation script automatically detects your distribution and uses the app
 ```
 
 This will:
-- Auto-detect your distribution (Debian/Ubuntu or RHEL/Fedora)
-- Install system packages (libportaudio, wl-clipboard, etc.)
-- Auto-detect display server (Wayland/X11) and install clipboard tools
+- Auto-detect your platform (macOS, Debian/Ubuntu, or RHEL/Fedora)
+- Install system packages (portaudio on macOS, libportaudio + wl-clipboard on Linux)
+- Auto-detect display server on Linux (Wayland/X11) and install clipboard tools
 - Install uv (fast Python package manager)
 - Install Python dependencies using uv
 - Download Whisper base model (~140MB)
@@ -102,6 +103,15 @@ This installs and enables the service to start automatically on login.
 2. Right-click → **New** → **Global Shortcut** → **Command/URL**
 3. Set command to: `/path/to/stt-clipboard/scripts/trigger.sh`
 4. Assign hotkey (e.g., **Meta+Shift+S**)
+
+#### macOS:
+
+1. Open **System Settings** → **Keyboard** → **Keyboard Shortcuts** → **Services**
+2. Or use a third-party tool like **BetterTouchTool**, **Karabiner-Elements**, or **Hammerspoon**
+3. Set command to: `/path/to/stt-clipboard/scripts/trigger.sh`
+4. Assign hotkey (e.g., **Ctrl+Option+S**)
+
+**Note for macOS users**: Auto-paste is not yet supported. After transcription, use **Cmd+V** to paste manually.
 
 ### 5. Usage
 
@@ -598,6 +608,6 @@ For issues, questions, or contributions, please open an issue on GitHub.
 
 ---
 
-**Made with ❤️ for the privacy-conscious bilingual Linux community**
+**Made with ❤️ for the privacy-conscious bilingual community**
 
-Works on Debian, Ubuntu, Fedora, RHEL, CentOS, Rocky Linux, and AlmaLinux.
+Works on macOS, Debian, Ubuntu, Fedora, RHEL, CentOS, Rocky Linux, and AlmaLinux.

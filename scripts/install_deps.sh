@@ -2,7 +2,7 @@
 
 # STT Clipboard - Dependency Installation Script
 # This script installs all necessary system and Python dependencies using uv
-# Supports: Debian/Ubuntu (apt) and RHEL/Fedora/CentOS (dnf/yum)
+# Supports: Debian/Ubuntu (apt), RHEL/Fedora/CentOS (dnf/yum), and macOS (brew)
 
 set -e  # Exit on error
 
@@ -11,22 +11,44 @@ echo "STT Clipboard - Dependency Installation"
 echo "========================================"
 echo ""
 
-# Detect package manager and distribution
-if command -v apt &> /dev/null; then
-    PKG_MANAGER="apt"
-    DISTRO_TYPE="debian"
-    echo "Detected: Debian/Ubuntu (apt)"
-elif command -v dnf &> /dev/null; then
-    PKG_MANAGER="dnf"
-    DISTRO_TYPE="rhel"
-    echo "Detected: RHEL/Fedora/Rocky Linux (dnf)"
-elif command -v yum &> /dev/null; then
-    PKG_MANAGER="yum"
-    DISTRO_TYPE="rhel"
-    echo "Detected: RHEL/CentOS (yum)"
+# Detect OS and package manager
+OS_TYPE="$(uname -s)"
+PKG_MANAGER=""
+DISTRO_TYPE=""
+
+if [ "$OS_TYPE" = "Darwin" ]; then
+    # macOS
+    if command -v brew &> /dev/null; then
+        PKG_MANAGER="brew"
+        DISTRO_TYPE="macos"
+        echo "Detected: macOS (Homebrew)"
+    else
+        echo "Error: Homebrew not found. Please install it first:"
+        echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+        exit 1
+    fi
+elif [ "$OS_TYPE" = "Linux" ]; then
+    # Linux distribution detection
+    if command -v apt &> /dev/null; then
+        PKG_MANAGER="apt"
+        DISTRO_TYPE="debian"
+        echo "Detected: Debian/Ubuntu (apt)"
+    elif command -v dnf &> /dev/null; then
+        PKG_MANAGER="dnf"
+        DISTRO_TYPE="rhel"
+        echo "Detected: RHEL/Fedora/Rocky Linux (dnf)"
+    elif command -v yum &> /dev/null; then
+        PKG_MANAGER="yum"
+        DISTRO_TYPE="rhel"
+        echo "Detected: RHEL/CentOS (yum)"
+    else
+        echo "Error: No supported package manager found (apt, dnf, or yum)"
+        echo "This script supports Debian/Ubuntu and RHEL-based distributions"
+        exit 1
+    fi
 else
-    echo "Error: No supported package manager found (apt, dnf, or yum)"
-    echo "This script supports Debian/Ubuntu and RHEL-based distributions"
+    echo "Error: Unsupported operating system: $OS_TYPE"
+    echo "This script supports macOS and Linux"
     exit 1
 fi
 
@@ -45,7 +67,14 @@ echo ""
 echo "Installing system dependencies..."
 echo ""
 
-if [ "$DISTRO_TYPE" = "debian" ]; then
+if [ "$DISTRO_TYPE" = "macos" ]; then
+    # macOS packages
+    brew install \
+        portaudio \
+        python@3.12
+    echo ""
+    echo "NOTE: macOS uses pbcopy/pbpaste for clipboard (pre-installed)"
+elif [ "$DISTRO_TYPE" = "debian" ]; then
     # Debian/Ubuntu packages
     sudo apt update
     sudo apt install -y \
@@ -71,58 +100,66 @@ fi
 echo ""
 echo "✓ System dependencies installed"
 
-# Detect session type and install X11 support if needed
-echo ""
-echo "Detecting display server..."
-SESSION_TYPE="${XDG_SESSION_TYPE:-unknown}"
-
-if [ "$SESSION_TYPE" = "x11" ] || [ -n "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; then
-    echo "X11 session detected, installing xclip for clipboard support..."
-    if [ "$DISTRO_TYPE" = "debian" ]; then
-        sudo apt install -y xclip
-    else
-        sudo $PKG_MANAGER install -y xclip
-    fi
-    echo "✓ X11 support (xclip) installed"
-elif [ "$SESSION_TYPE" = "wayland" ] || [ -n "$WAYLAND_DISPLAY" ]; then
-    echo "Wayland session detected, using wl-clipboard"
-else
-    echo "Session type unknown, installing both wl-clipboard and xclip for compatibility..."
-    if [ "$DISTRO_TYPE" = "debian" ]; then
-        sudo apt install -y xclip
-    else
-        sudo $PKG_MANAGER install -y xclip
-    fi
-    echo "✓ Both Wayland and X11 support installed"
-fi
-
-# Install auto-paste tools (optional)
-echo ""
-echo "Installing auto-paste tools (optional)..."
-
-# For X11
-if [ "$SESSION_TYPE" = "x11" ] || [ -n "$DISPLAY" ]; then
-    echo "Installing xdotool for X11 auto-paste..."
-    if [ "$DISTRO_TYPE" = "debian" ]; then
-        sudo apt install -y xdotool
-    else
-        sudo $PKG_MANAGER install -y xdotool
-    fi
-    echo "✓ xdotool installed"
-fi
-
-# For Wayland
-if [ "$SESSION_TYPE" = "wayland" ] || [ -n "$WAYLAND_DISPLAY" ]; then
-    echo "Installing ydotool for Wayland auto-paste..."
-    if [ "$DISTRO_TYPE" = "debian" ]; then
-        sudo apt install -y ydotool
-    else
-        sudo $PKG_MANAGER install -y ydotool
-    fi
-    echo "✓ ydotool installed"
+# Detect session type and install X11 support if needed (Linux only)
+if [ "$DISTRO_TYPE" != "macos" ]; then
     echo ""
-    echo "NOTE: The ydotoold daemon must be running for ydotool to work"
-    echo "Enable with: sudo systemctl enable --now ydotool"
+    echo "Detecting display server..."
+    SESSION_TYPE="${XDG_SESSION_TYPE:-unknown}"
+
+    if [ "$SESSION_TYPE" = "x11" ] || [ -n "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; then
+        echo "X11 session detected, installing xclip for clipboard support..."
+        if [ "$DISTRO_TYPE" = "debian" ]; then
+            sudo apt install -y xclip
+        else
+            sudo $PKG_MANAGER install -y xclip
+        fi
+        echo "✓ X11 support (xclip) installed"
+    elif [ "$SESSION_TYPE" = "wayland" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+        echo "Wayland session detected, using wl-clipboard"
+    else
+        echo "Session type unknown, installing both wl-clipboard and xclip for compatibility..."
+        if [ "$DISTRO_TYPE" = "debian" ]; then
+            sudo apt install -y xclip
+        else
+            sudo $PKG_MANAGER install -y xclip
+        fi
+        echo "✓ Both Wayland and X11 support installed"
+    fi
+fi
+
+# Install auto-paste tools (optional, Linux only)
+if [ "$DISTRO_TYPE" != "macos" ]; then
+    echo ""
+    echo "Installing auto-paste tools (optional)..."
+
+    # For X11
+    if [ "$SESSION_TYPE" = "x11" ] || [ -n "$DISPLAY" ]; then
+        echo "Installing xdotool for X11 auto-paste..."
+        if [ "$DISTRO_TYPE" = "debian" ]; then
+            sudo apt install -y xdotool
+        else
+            sudo $PKG_MANAGER install -y xdotool
+        fi
+        echo "✓ xdotool installed"
+    fi
+
+    # For Wayland
+    if [ "$SESSION_TYPE" = "wayland" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+        echo "Installing ydotool for Wayland auto-paste..."
+        if [ "$DISTRO_TYPE" = "debian" ]; then
+            sudo apt install -y ydotool
+        else
+            sudo $PKG_MANAGER install -y ydotool
+        fi
+        echo "✓ ydotool installed"
+        echo ""
+        echo "NOTE: The ydotoold daemon must be running for ydotool to work"
+        echo "Enable with: sudo systemctl enable --now ydotool"
+    fi
+else
+    echo ""
+    echo "NOTE: Auto-paste is not yet supported on macOS."
+    echo "Text will be copied to clipboard; use Cmd+V to paste manually."
 fi
 
 # Check if uv is installed
