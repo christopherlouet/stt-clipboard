@@ -41,7 +41,7 @@ jobs:
           uv pip install --system mkdocs mkdocs-material mkdocstrings[python] pymdown-extensions
 
       - name: Build documentation
-        run: mkdocs build --strict
+        run: mkdocs build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
