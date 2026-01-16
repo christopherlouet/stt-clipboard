@@ -8,6 +8,7 @@ import pytest
 from src.autopaste import (
     AutoPasteError,
     BaseAutoPaster,
+    MacPaster,
     WtypePaster,
     XdotoolPaster,
     YdotoolPaster,
@@ -54,6 +55,16 @@ def test_ydotool_paster_initialization():
 def test_wtype_paster_initialization():
     """Test WtypePaster initialization."""
     paster = WtypePaster(timeout=2.0)
+    assert paster.timeout == 2.0
+
+    # is_available should return a boolean
+    available = paster.is_available()
+    assert isinstance(available, bool)
+
+
+def test_mac_paster_initialization():
+    """Test MacPaster initialization."""
+    paster = MacPaster(timeout=2.0)
     assert paster.timeout == 2.0
 
     # is_available should return a boolean
@@ -387,16 +398,114 @@ class TestWtypePasterMocked:
         assert result is False
 
 
+class TestMacPasterMocked:
+    """Tests for MacPaster with mocking."""
+
+    @patch("src.autopaste.shutil.which")
+    @patch("src.autopaste.platform.system")
+    def test_is_available_on_macos(self, mock_system: MagicMock, mock_which: MagicMock):
+        """Test is_available returns True when on macOS with osascript."""
+        mock_system.return_value = "Darwin"
+        mock_which.return_value = "/usr/bin/osascript"
+        paster = MacPaster(timeout=2.0)
+
+        result = paster.is_available()
+
+        assert result is True
+        mock_system.assert_called_once()
+        mock_which.assert_called_once_with("osascript")
+
+    @patch("src.autopaste.platform.system")
+    def test_is_available_not_on_macos(self, mock_system: MagicMock):
+        """Test is_available returns False when not on macOS."""
+        mock_system.return_value = "Linux"
+        paster = MacPaster(timeout=2.0)
+
+        result = paster.is_available()
+
+        assert result is False
+
+    @patch("src.autopaste.shutil.which")
+    @patch("src.autopaste.platform.system")
+    def test_is_available_no_osascript(self, mock_system: MagicMock, mock_which: MagicMock):
+        """Test is_available returns False when osascript not found."""
+        mock_system.return_value = "Darwin"
+        mock_which.return_value = None
+        paster = MacPaster(timeout=2.0)
+
+        result = paster.is_available()
+
+        assert result is False
+
+    @patch("src.autopaste.subprocess.run")
+    def test_paste_success(self, mock_run: MagicMock):
+        """Test paste returns True on success."""
+        mock_run.return_value = MagicMock(returncode=0)
+        paster = MacPaster(timeout=2.0)
+
+        result = paster.paste()
+
+        assert result is True
+        mock_run.assert_called_once()
+        # Verify the osascript command is correct
+        call_args = mock_run.call_args
+        assert call_args[0][0][0] == "osascript"
+        assert call_args[0][0][1] == "-e"
+        assert "System Events" in call_args[0][0][2]
+        assert "keystroke" in call_args[0][0][2]
+
+    @patch("src.autopaste.subprocess.run")
+    def test_paste_failure(self, mock_run: MagicMock):
+        """Test paste returns False on failure."""
+        mock_run.return_value = MagicMock(returncode=1, stderr=b"Error")
+        paster = MacPaster(timeout=2.0)
+
+        result = paster.paste()
+
+        assert result is False
+
+    @patch("src.autopaste.subprocess.run")
+    def test_paste_timeout(self, mock_run: MagicMock):
+        """Test paste returns False on timeout."""
+        import subprocess
+
+        mock_run.side_effect = subprocess.TimeoutExpired("osascript", 2)
+        paster = MacPaster(timeout=2.0)
+
+        result = paster.paste()
+
+        assert result is False
+
+    @patch("src.autopaste.subprocess.run")
+    def test_paste_exception(self, mock_run: MagicMock):
+        """Test paste returns False on exception."""
+        mock_run.side_effect = RuntimeError("Unknown error")
+        paster = MacPaster(timeout=2.0)
+
+        result = paster.paste()
+
+        assert result is False
+
+
 class TestDetectAvailableTools:
     """Tests for _detect_available_tools function."""
 
     @patch("src.autopaste.WtypePaster")
     @patch("src.autopaste.YdotoolPaster")
     @patch("src.autopaste.XdotoolPaster")
+    @patch("src.autopaste.MacPaster")
     def test_returns_available_tools(
-        self, mock_xdotool: MagicMock, mock_ydotool: MagicMock, mock_wtype: MagicMock
+        self,
+        mock_mac: MagicMock,
+        mock_xdotool: MagicMock,
+        mock_ydotool: MagicMock,
+        mock_wtype: MagicMock,
     ):
         """Test that only available tools are returned."""
+        mock_mac_instance = MagicMock()
+        mock_mac_instance.is_available.return_value = False
+        mock_mac.return_value = mock_mac_instance
+
         mock_xdotool_instance = MagicMock()
         mock_xdotool_instance.is_available.return_value = True
         mock_xdotool.return_value = mock_xdotool_instance
@@ -415,15 +524,21 @@ class TestDetectAvailableTools:
         assert mock_xdotool_instance in result
         assert mock_wtype_instance in result
         assert mock_ydotool_instance not in result
+        assert mock_mac_instance not in result
 
     @patch("src.autopaste.WtypePaster")
     @patch("src.autopaste.YdotoolPaster")
     @patch("src.autopaste.XdotoolPaster")
+    @patch("src.autopaste.MacPaster")
     def test_returns_empty_when_no_tools_available(
-        self, mock_xdotool: MagicMock, mock_ydotool: MagicMock, mock_wtype: MagicMock
+        self,
+        mock_mac: MagicMock,
+        mock_xdotool: MagicMock,
+        mock_ydotool: MagicMock,
+        mock_wtype: MagicMock,
     ):
         """Test that empty list is returned when no tools available."""
-        for mock in [mock_xdotool, mock_ydotool, mock_wtype]:
+        for mock in [mock_mac, mock_xdotool, mock_ydotool, mock_wtype]:
             instance = MagicMock()
             instance.is_available.return_value = False
             mock.return_value = instance
@@ -431,6 +546,39 @@ class TestDetectAvailableTools:
         result = _detect_available_tools(timeout=2.0)
 
         assert result == []
+
+    @patch("src.autopaste.WtypePaster")
+    @patch("src.autopaste.YdotoolPaster")
+    @patch("src.autopaste.XdotoolPaster")
+    @patch("src.autopaste.MacPaster")
+    def test_mac_paster_first_on_macos(
+        self,
+        mock_mac: MagicMock,
+        mock_xdotool: MagicMock,
+        mock_ydotool: MagicMock,
+        mock_wtype: MagicMock,
+    ):
+        """Test that MacPaster is first in the list when available."""
+        mock_mac_instance = MagicMock()
+        mock_mac_instance.is_available.return_value = True
+        mock_mac.return_value = mock_mac_instance
+
+        mock_xdotool_instance = MagicMock()
+        mock_xdotool_instance.is_available.return_value = False
+        mock_xdotool.return_value = mock_xdotool_instance
+
+        mock_ydotool_instance = MagicMock()
+        mock_ydotool_instance.is_available.return_value = False
+        mock_ydotool.return_value = mock_ydotool_instance
+
+        mock_wtype_instance = MagicMock()
+        mock_wtype_instance.is_available.return_value = False
+        mock_wtype.return_value = mock_wtype_instance
+
+        result = _detect_available_tools(timeout=2.0)
+
+        assert len(result) == 1
+        assert result[0] == mock_mac_instance
 
 
 class TestCreateAutopasterMocked:
@@ -476,6 +624,17 @@ class TestCreateAutopasterMocked:
         result = create_autopaster(preferred_tool="ydotool")
 
         assert result == mock_xdotool
+
+    @patch("src.autopaste._detect_available_tools")
+    def test_returns_osascript_when_preferred(self, mock_detect: MagicMock):
+        """Test returns MacPaster when osascript is preferred."""
+        mock_mac = MagicMock(spec=MacPaster)
+        mock_xdotool = MagicMock(spec=XdotoolPaster)
+        mock_detect.return_value = [mock_mac, mock_xdotool]
+
+        result = create_autopaster(preferred_tool="osascript")
+
+        assert result == mock_mac
 
 
 class TestAutoPasteFunction:

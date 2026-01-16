@@ -179,8 +179,10 @@ if [ "$DISTRO_TYPE" != "macos" ]; then
     fi
 else
     echo ""
-    echo "NOTE: Auto-paste is not yet supported on macOS."
-    echo "Text will be copied to clipboard; use Cmd+V to paste manually."
+    echo "NOTE: Auto-paste on macOS uses osascript (System Events)."
+    echo "You must grant Accessibility permissions for auto-paste to work:"
+    echo "  System Settings → Privacy & Security → Accessibility"
+    echo "  → Enable access for your terminal or the application running the script."
 fi
 
 # Check if uv is installed

@@ -49,7 +49,7 @@ The installation script automatically detects your platform and uses the appropr
 | **Debian** | apt | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
 | **Fedora** | dnf | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
 | **Arch Linux** | pacman | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
-| **macOS** | brew | ✅ Tested | pbcopy/pbpaste | Not yet supported |
+| **macOS** | brew | ✅ Tested | pbcopy/pbpaste | osascript (Cmd+V) |
 | RHEL 8/9 | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
 | CentOS Stream | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
 | Rocky Linux | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
@@ -113,7 +113,7 @@ This installs and enables the service to start automatically on login.
 3. Set command to: `/path/to/stt-clipboard/scripts/trigger.sh`
 4. Assign hotkey (e.g., **Ctrl+Option+S**)
 
-**Note for macOS users**: Auto-paste is not yet supported. After transcription, use **Cmd+V** to paste manually.
+**Note for macOS users**: Auto-paste requires **Accessibility permissions**. Go to **System Settings → Privacy & Security → Accessibility** and enable access for your terminal or the application running the script.
 
 ### 5. Usage
 
@@ -167,7 +167,7 @@ paste:
   enabled: true          # Enable/disable auto-paste
   timeout: 2.0          # Paste operation timeout
   delay_ms: 100         # Delay between copy and paste
-  preferred_tool: auto  # "auto", "xdotool", "ydotool", "wtype"
+  preferred_tool: auto  # "auto", "osascript", "xdotool", "ydotool", "wtype"
 ```
 
 After changes: `systemctl --user restart stt-clipboard`
