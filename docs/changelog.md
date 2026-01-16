@@ -4,7 +4,25 @@ All notable changes to this project are documented here.
 
 For the full changelog, see [CHANGELOG.md](https://github.com/christopherlouet/stt-clipboard/blob/main/CHANGELOG.md).
 
-## [1.1.0] - 2025-01-16
+## [1.2.0] - 2026-01-16
+
+### Added
+
+- **MkDocs Documentation** with Material theme
+  - Full documentation site at [https://christopherlouet.github.io/stt-clipboard/](https://christopherlouet.github.io/stt-clipboard/)
+  - Getting Started guide (installation, quickstart, configuration)
+  - User Guide (basic usage, auto-paste, service management, troubleshooting)
+  - Architecture documentation (overview, components)
+  - Development guide (contributing, testing, security)
+  - API Reference
+- Documentation badge in README
+- GitHub Actions workflow for automatic documentation deployment to GitHub Pages
+
+### Changed
+
+- Updated README with link to full documentation
+
+## [1.1.0] - 2026-01-16
 
 ### Added
 

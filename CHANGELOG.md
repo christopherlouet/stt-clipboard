@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-01-16
+
+### Added
+- **MkDocs Documentation** with Material theme
+  - Full documentation site at https://christopherlouet.github.io/stt-clipboard/
+  - Getting Started guide (installation, quickstart, configuration)
+  - User Guide (basic usage, auto-paste, service management, troubleshooting)
+  - Architecture documentation (overview, components)
+  - Development guide (contributing, testing, security)
+  - API Reference
+- Documentation badge in README
+- GitHub Actions workflow for automatic documentation deployment to GitHub Pages
+
+### Changed
+- Updated README with link to full documentation
+
 ## [1.1.0] - 2026-01-16
 
 ### Added
@@ -109,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/christopherlouet/stt-clipboard/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/christopherlouet/stt-clipboard/releases/tag/v0.1.0
