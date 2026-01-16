@@ -32,7 +32,7 @@ Professional-grade, privacy-focused speech-to-text system with bilingual support
 ## Requirements
 
 - **Operating System** (auto-detected):
-  - **Linux**: Debian/Ubuntu, Fedora, RHEL/CentOS/Rocky Linux/AlmaLinux
+  - **Linux**: Debian, Ubuntu, Arch Linux, Fedora, RHEL/CentOS/Rocky Linux/AlmaLinux
   - **macOS**: macOS 12+ (Monterey or later)
 - Python 3.10+
 - Wayland or X11 session on Linux (auto-detected), native on macOS
@@ -46,7 +46,9 @@ The installation script automatically detects your platform and uses the appropr
 | Platform | Package Manager | Status | Clipboard | Auto-Paste |
 |----------|-----------------|--------|-----------|------------|
 | **Ubuntu** | apt | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
+| **Debian** | apt | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
 | **Fedora** | dnf | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
+| **Arch Linux** | pacman | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
 | **macOS** | brew | ✅ Tested | pbcopy/pbpaste | Not yet supported |
 | RHEL 8/9 | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
 | CentOS Stream | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
@@ -63,7 +65,7 @@ The installation script automatically detects your platform and uses the appropr
 ```
 
 This will:
-- Auto-detect your platform (macOS, Debian/Ubuntu, or RHEL/Fedora)
+- Auto-detect your platform (macOS, Debian/Ubuntu, Arch Linux, or RHEL/Fedora)
 - Install system packages (portaudio on macOS, libportaudio + wl-clipboard on Linux)
 - Auto-detect display server on Linux (Wayland/X11) and install clipboard tools
 - Install uv (fast Python package manager)
@@ -610,4 +612,4 @@ For issues, questions, or contributions, please open an issue on GitHub.
 
 **Made with ❤️ for the privacy-conscious bilingual community**
 
-Works on macOS, Debian, Ubuntu, Fedora, RHEL, CentOS, Rocky Linux, and AlmaLinux.
+Works on macOS, Debian, Ubuntu, Arch Linux, Fedora, RHEL, CentOS, Rocky Linux, and AlmaLinux.
