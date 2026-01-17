@@ -1,6 +1,7 @@
 """Speech-to-text transcription using faster-whisper."""
 
 import time
+from collections.abc import Iterator
 from pathlib import Path
 
 import numpy as np
@@ -182,6 +183,74 @@ class WhisperTranscriber:
         except Exception as e:
             logger.error(f"Transcription with timestamps failed: {e}")
             raise RuntimeError(f"Transcription failed: {e}")
+
+    def transcribe_streaming(self, audio: np.ndarray) -> Iterator[tuple[str, float, float]]:
+        """Transcribe audio with streaming output.
+
+        Yields segments one by one as they are processed, allowing for
+        real-time display of transcription results.
+
+        Args:
+            audio: Audio data (float32, normalized to [-1, 1])
+
+        Yields:
+            Tuples of (text, start_time, end_time) for each segment
+        """
+        if self.model is None:
+            logger.info("Model not loaded, loading now...")
+            self.load_model()
+
+        try:
+            # Ensure audio is the right format
+            if audio.dtype != np.float32:
+                audio = audio.astype(np.float32)
+
+            # Normalize if needed
+            if np.abs(audio).max() > 1.0:
+                audio = audio / np.abs(audio).max()
+
+            # Convert empty string to None for auto-detection
+            language = self.config.language if self.config.language else None
+
+            # Transcribe with streaming
+            segments, info = self.model.transcribe(
+                audio,
+                language=language,
+                beam_size=self.config.beam_size,
+                best_of=self.config.best_of,
+                temperature=self.config.temperature,
+                vad_filter=False,
+                word_timestamps=False,
+                condition_on_previous_text=False,
+            )
+
+            # Store detected language
+            self.detected_language = info.language
+
+            # Yield segments one by one
+            for segment in segments:
+                text = segment.text.strip()
+                if text:  # Skip empty segments
+                    yield (text, segment.start, segment.end)
+
+        except Exception as e:
+            logger.error(f"Streaming transcription failed: {e}")
+            raise RuntimeError(f"Streaming transcription failed: {e}")
+
+    def transcribe_streaming_to_text(self, audio: np.ndarray) -> str:
+        """Transcribe audio with streaming, returning final text.
+
+        Convenience method that collects all streaming segments into
+        a single text string.
+
+        Args:
+            audio: Audio data (float32, normalized to [-1, 1])
+
+        Returns:
+            Complete transcribed text
+        """
+        texts = [text for text, _, _ in self.transcribe_streaming(audio)]
+        return " ".join(texts)
 
     def get_model_info(self) -> dict:
         """Get information about the loaded model.
