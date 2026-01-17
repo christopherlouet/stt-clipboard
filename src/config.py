@@ -5,6 +5,8 @@ from pathlib import Path
 
 import yaml
 
+from src.autopaste import check_paste_tool
+from src.clipboard import check_clipboard_tool
 from src.languages import SupportedLanguage
 
 
@@ -101,6 +103,15 @@ class HistoryConfig:
     file: str = "./data/history.json"
     max_entries: int = 100
     auto_save: bool = True
+
+
+@dataclass
+class ValidationResult:
+    """Result of system tools validation."""
+
+    is_valid: bool
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -218,6 +229,37 @@ class Config:
             raise ValueError(
                 f"Invalid logging level: {self.logging.level}. Must be one of {valid_levels}"
             )
+
+    def validate_system_tools(self) -> ValidationResult:
+        """Validate that required system tools are available.
+
+        Checks for clipboard and paste tools based on configuration.
+
+        Returns:
+            ValidationResult with is_valid, errors, and warnings
+        """
+        errors: list[str] = []
+        warnings: list[str] = []
+
+        # Check clipboard tool (required if clipboard is enabled)
+        if self.clipboard.enabled:
+            if not check_clipboard_tool():
+                errors.append(
+                    "No clipboard tool available. "
+                    "Install wl-clipboard (Wayland), xclip/xsel (X11), or pbcopy (macOS)."
+                )
+
+        # Check paste tool (optional, only warning if missing)
+        if self.paste.enabled:
+            if not check_paste_tool(self.paste.preferred_tool):
+                warnings.append(
+                    f"Auto-paste tool '{self.paste.preferred_tool}' not available. "
+                    "Auto-paste will be disabled. "
+                    "Install xdotool (X11), ydotool (universal), or wtype (Wayland)."
+                )
+
+        is_valid = len(errors) == 0
+        return ValidationResult(is_valid=is_valid, errors=errors, warnings=warnings)
 
     def to_dict(self) -> dict:
         """Convert configuration to dictionary.

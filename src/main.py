@@ -511,8 +511,19 @@ def main():
         # Validate config
         config.validate()
 
+        # Validate system tools
+        tools_result = config.validate_system_tools()
+        if not tools_result.is_valid:
+            for error in tools_result.errors:
+                print(f"ERROR: {error}", file=sys.stderr)  # noqa: T201
+            sys.exit(1)
+
         # Setup logging
         setup_logging(config)
+
+        # Log warnings about optional tools
+        for warning in tools_result.warnings:
+            logger.warning(warning)
 
         logger.info("=" * 60)
         logger.info("STT Clipboard - Offline Speech-to-Text")

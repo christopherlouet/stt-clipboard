@@ -317,6 +317,28 @@ def _detect_available_tools(timeout: float = 2.0) -> list[BaseAutoPaster]:
     return available
 
 
+def check_paste_tool(preferred_tool: str = "auto") -> bool:
+    """Check if a paste tool is available.
+
+    Args:
+        preferred_tool: Tool to check ("auto", "xdotool", "ydotool", "wtype")
+
+    Returns:
+        True if the tool (or any tool for "auto") is available, False otherwise
+    """
+    if preferred_tool == "auto":
+        # Check if any paste tool is available
+        return (
+            shutil.which("xdotool") is not None
+            or shutil.which("ydotool") is not None
+            or shutil.which("wtype") is not None
+            or (platform.system() == "Darwin" and shutil.which("osascript") is not None)
+        )
+    else:
+        # Check for specific tool
+        return shutil.which(preferred_tool) is not None
+
+
 def create_autopaster(
     preferred_tool: str = "auto",
     timeout: float = 2.0,

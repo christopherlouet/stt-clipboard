@@ -435,6 +435,30 @@ def detect_session_type() -> str:
     return "unknown"
 
 
+def check_clipboard_tool() -> bool:
+    """Check if a clipboard tool is available for the current session.
+
+    Returns:
+        True if a clipboard tool is available, False otherwise
+    """
+    session_type = detect_session_type()
+
+    if session_type == "macos":
+        return shutil.which("pbcopy") is not None
+    elif session_type == "wayland":
+        return shutil.which("wl-copy") is not None
+    elif session_type == "x11":
+        return shutil.which("xclip") is not None or shutil.which("xsel") is not None
+    else:
+        # Unknown session: check for any tool
+        return (
+            shutil.which("pbcopy") is not None
+            or shutil.which("wl-copy") is not None
+            or shutil.which("xclip") is not None
+            or shutil.which("xsel") is not None
+        )
+
+
 def create_clipboard_manager(timeout: float = 2.0) -> BaseClipboardManager:
     """Create appropriate clipboard manager for the current session.
 
