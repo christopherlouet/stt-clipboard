@@ -117,7 +117,19 @@ class TriggerServer:
                 self._handle_client, path=self.socket_path
             )
 
-            # Set socket permissions (readable/writable by user)
+            # Set socket permissions to 0600 (owner read/write only)
+            #
+            # SECURITY NOTE: Unix socket permissions are critical for security.
+            # - 0600 = rw------- (only the socket owner can read/write)
+            # - This prevents other users on the system from:
+            #   1. Triggering transcriptions without permission
+            #   2. Reading transcribed text from responses
+            #   3. Causing denial-of-service by flooding the socket
+            #
+            # More permissive modes (e.g., 0666) would allow any local user
+            # to interact with the service, which is a security risk.
+            # The socket is placed in /tmp by default, which is world-writable,
+            # but the socket file itself is protected by these permissions.
             os.chmod(self.socket_path, 0o600)
 
             self.is_running = True
