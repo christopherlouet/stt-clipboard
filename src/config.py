@@ -5,6 +5,8 @@ from pathlib import Path
 
 import yaml
 
+from src.languages import SupportedLanguage
+
 
 @dataclass
 class AudioConfig:
@@ -183,6 +185,15 @@ class Config:
 
         if self.transcription.beam_size < 1:
             raise ValueError(f"beam_size must be >= 1: {self.transcription.beam_size}")
+
+        # Language validation (empty string means auto-detect)
+        if self.transcription.language:
+            valid_languages = SupportedLanguage.all_codes()
+            if self.transcription.language not in valid_languages:
+                raise ValueError(
+                    f"Invalid language: {self.transcription.language}. "
+                    f"Must be one of {valid_languages} or empty for auto-detect"
+                )
 
         # Logging validation
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]

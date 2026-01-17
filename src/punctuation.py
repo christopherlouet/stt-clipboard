@@ -1,30 +1,27 @@
-"""French punctuation post-processing for transcribed text."""
+"""Language-aware punctuation post-processing for transcribed text."""
 
 import re
 
 from loguru import logger
 
+from src.languages import get_language_rules
 
-def apply_french_punctuation(
+
+def apply_punctuation_rules(
     text: str, enable_french_spacing: bool = True, detected_language: str | None = None
 ) -> str:
     """Apply language-appropriate typography rules to transcribed text.
 
-    French typography requires:
-    - Space before: ? ! : ;
-    - No space before: , .
-    - Capitalization after sentence-ending punctuation
-    - Proper handling of apostrophes and quotes
-
-    English typography requires:
-    - No space before any punctuation
-    - Space after punctuation
-    - Capitalization after sentence-ending punctuation
+    Applies language-specific rules for:
+    - French: Space before ? ! : ; and « » quotes
+    - German: „ " quotes, no space before punctuation
+    - Spanish/Italian: « » quotes, no space before punctuation
+    - English: " " quotes, no space before punctuation
 
     Args:
         text: Input text to process
         enable_french_spacing: Whether to apply French spacing rules when detected
-        detected_language: Detected language code (e.g., "fr", "en")
+        detected_language: Detected language code (e.g., "fr", "en", "de", "es", "it")
 
     Returns:
         Processed text with proper punctuation for the detected language
@@ -44,38 +41,46 @@ def apply_french_punctuation(
         detected_language is None or detected_language == "fr"
     )
 
+    # Get language rules for other processing (quotes, capitalization)
+    rules = get_language_rules(detected_language)
+
+    # Apply space before punctuation based on French rules setting
     if apply_french_rules:
-        # Add space before French punctuation marks (if not already present)
-        # Handle: ? ! : ;
+        # Add space before French punctuation marks (? ! : ;)
         text = re.sub(r"\s*([?!:;])", r" \1", text)
-
-        # Remove space after opening quotes
-        text = re.sub(r"«\s+", "« ", text)
-
-        # Remove space before closing quotes
-        text = re.sub(r"\s+»", " »", text)
     else:
-        # For English and other languages: ensure NO space before punctuation
+        # For non-French: ensure NO space before punctuation
         text = re.sub(r"\s+([?!:;])", r"\1", text)
 
-    # Remove space before commas and periods
-    text = re.sub(r"\s+([,.])", r"\1", text)
+    # Remove space before commas and periods (universal rule)
+    no_space_pattern = "".join(re.escape(p) for p in rules.no_space_before_punctuation)
+    text = re.sub(rf"\s+([{no_space_pattern}])", r"\1", text)
+
+    # Handle quotes based on language
+    if rules.opening_quote == "\u00ab":  # French-style « »
+        text = re.sub(r"\u00ab\s+", "\u00ab ", text)
+        text = re.sub(r"\s+\u00bb", " \u00bb", text)
+    elif rules.opening_quote == "\u201e":  # German-style „ "
+        text = re.sub(r"\u201e\s+", "\u201e", text)
+        text = re.sub(r"\s+\u201c", "\u201c", text)
 
     # Ensure space after commas and periods (if followed by a letter)
-    text = re.sub(r"([,.])([A-Za-zÀ-ÿ])", r"\1 \2", text)
+    text = re.sub(r"([,.])([A-Za-z\u00c0-\u00ff])", r"\1 \2", text)
 
     # Capitalize first letter
-    if text:
+    if text and rules.capitalize_after_sentence:
         text = text[0].upper() + text[1:]
 
     # Capitalize after sentence-ending punctuation (. ! ?)
-    def capitalize_after_punctuation(match):
-        punct = match.group(1)
-        space = match.group(2)
-        letter = match.group(3).upper()
-        return f"{punct}{space}{letter}"
+    if rules.capitalize_after_sentence:
 
-    text = re.sub(r"([.!?])(\s+)([a-zà-ÿ])", capitalize_after_punctuation, text)
+        def capitalize_after_punctuation(match: re.Match[str]) -> str:
+            punct = match.group(1)
+            space = match.group(2)
+            letter = match.group(3).upper()
+            return f"{punct}{space}{letter}"
+
+        text = re.sub(r"([.!?])(\s+)([a-z\u00e0-\u00ff])", capitalize_after_punctuation, text)
 
     # Handle common French contractions and apostrophes (only for French)
     if apply_french_rules:
@@ -94,34 +99,50 @@ def apply_french_punctuation(
     text = text.strip()
 
     lang_info = f"lang={detected_language}" if detected_language else "lang=unknown"
-    rules_applied = "French" if apply_french_rules else "English/other"
+    rules_applied = "French" if apply_french_rules else f"{detected_language or 'default'}"
     logger.debug(f"Punctuation processed: {len(text)} chars ({lang_info}, {rules_applied} rules)")
 
     return text
 
 
-def clean_whisper_artifacts(text: str) -> str:
+def clean_whisper_artifacts(text: str, detected_language: str | None = None) -> str:
     """Remove common Whisper transcription artifacts.
+
+    Uses language-specific filler word lists for better cleanup.
+    When no language is detected, uses French filler words (backward compatible).
 
     Args:
         text: Input text from Whisper
+        detected_language: Detected language code for language-specific cleanup
 
     Returns:
         Cleaned text
     """
-    # Remove common filler words that Whisper sometimes adds
-    fillers = [
-        r"\b(euh|euuh|euhh)\b",
-        r"\b(hum|humm|hmmm)\b",
-    ]
+    # Get language-specific filler words
+    # Default to French when no language detected (backward compatible)
+    effective_language = detected_language if detected_language else "fr"
+    rules = get_language_rules(effective_language)
 
-    for filler in fillers:
-        text = re.sub(filler, "", text, flags=re.IGNORECASE)
+    # Remove filler words from the language rules
+    for filler in rules.filler_words:
+        text = re.sub(rf"\b{re.escape(filler)}\b", "", text, flags=re.IGNORECASE)
 
     # Remove extra whitespace
     text = re.sub(r"\s+", " ", text)
 
     return text.strip()
+
+
+# Backward compatibility alias
+def apply_french_punctuation(
+    text: str, enable_french_spacing: bool = True, detected_language: str | None = None
+) -> str:
+    """Apply language-appropriate typography rules to transcribed text.
+
+    Deprecated: Use apply_punctuation_rules() instead.
+    This alias is kept for backward compatibility.
+    """
+    return apply_punctuation_rules(text, enable_french_spacing, detected_language)
 
 
 def format_for_code(text: str) -> str:
@@ -170,7 +191,7 @@ class PunctuationProcessor:
 
         Args:
             text: Input text
-            detected_language: Detected language code (e.g., "fr", "en")
+            detected_language: Detected language code (e.g., "fr", "en", "de", "es", "it")
 
         Returns:
             Processed text with language-appropriate rules
@@ -178,12 +199,12 @@ class PunctuationProcessor:
         if not text or not text.strip():
             return text
 
-        # Clean artifacts first
+        # Clean artifacts first (with language-specific filler words)
         if self.clean_artifacts:
-            text = clean_whisper_artifacts(text)
+            text = clean_whisper_artifacts(text, detected_language)
 
         # Apply punctuation rules based on detected language
-        text = apply_french_punctuation(
+        text = apply_punctuation_rules(
             text,
             enable_french_spacing=self.enable_french_spacing,
             detected_language=detected_language,
