@@ -65,3 +65,22 @@ def notify_text_copied(text: str) -> bool:
     return send_notification(
         "STT Clipboard", f"Texte copié dans le presse-papiers:\n{display_text}", urgency="normal"
     )
+
+
+def notify_no_speech_detected(timeout_seconds: int = 30) -> bool:
+    """Notify user that no speech was detected during recording.
+
+    This notification is sent when the recording times out without
+    detecting any speech input.
+
+    Args:
+        timeout_seconds: The timeout duration that was reached
+
+    Returns:
+        True if notification was sent successfully
+    """
+    return send_notification(
+        "STT Clipboard",
+        f"Aucune parole détectée pendant {timeout_seconds}s",
+        urgency="low",
+    )

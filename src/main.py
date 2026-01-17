@@ -13,7 +13,11 @@ from src.autopaste import create_autopaster
 from src.clipboard import copy_to_clipboard
 from src.config import Config
 from src.hotkey import TriggerServer, TriggerType
-from src.notifications import notify_recording_started, notify_text_copied
+from src.notifications import (
+    notify_no_speech_detected,
+    notify_recording_started,
+    notify_text_copied,
+)
 from src.punctuation import PunctuationProcessor
 from src.transcription import WhisperTranscriber
 
@@ -110,7 +114,8 @@ class STTService:
             audio = await asyncio.to_thread(self.audio_recorder.record_until_silence)
 
             if audio is None:
-                logger.error("Audio recording failed")
+                logger.warning("No speech detected or recording failed")
+                notify_no_speech_detected(timeout_seconds=self.config.audio.max_recording_duration)
                 self.stats["failed_transcriptions"] += 1
                 return None
 
