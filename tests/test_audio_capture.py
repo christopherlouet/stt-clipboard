@@ -210,6 +210,24 @@ class TestAudioRecorderDetectSpeech:
 
         assert prob == 0.0
 
+    @patch("src.audio_capture.torch.hub.load")
+    def test_handles_multidimensional_audio(self, mock_torch_load: MagicMock):
+        """Test multi-dimensional audio is squeezed to 1D."""
+        mock_model = MagicMock()
+        mock_model.return_value.item.return_value = 0.75
+        mock_torch_load.return_value = (mock_model, None)
+
+        audio_config = AudioConfig()
+        vad_config = VADConfig()
+        recorder = AudioRecorder(audio_config, vad_config)
+
+        # Multi-dimensional audio (e.g., stereo converted to mono with extra dim)
+        audio_chunk = np.zeros((512, 1), dtype=np.float32)
+        prob = recorder._detect_speech(audio_chunk)
+
+        assert prob == 0.75
+        mock_model.assert_called()
+
 
 class TestAudioRecorderAudioCallback:
     """Tests for audio callback handling."""
@@ -316,6 +334,71 @@ class TestAudioRecorderAudioCallback:
 
         # Should not raise, just log
         recorder._audio_callback(indata, 512, None, status)
+
+    @patch("src.audio_capture.torch.hub.load")
+    def test_handles_int16_audio_in_callback(self, mock_torch_load: MagicMock):
+        """Test int16 audio is converted to float32 in callback."""
+        mock_model = MagicMock()
+        mock_model.return_value.item.return_value = 0.1  # No speech
+        mock_torch_load.return_value = (mock_model, None)
+
+        audio_config = AudioConfig()
+        vad_config = VADConfig(threshold=0.5)
+        recorder = AudioRecorder(audio_config, vad_config)
+        recorder._load_vad_model()
+
+        # Simulate audio callback with int16 data
+        indata = np.zeros((512, 1), dtype=np.int16)
+        recorder._audio_callback(indata, 512, None, None)
+
+        # Should not raise, audio should be converted
+        assert len(recorder.pre_buffer) == 512
+
+    @patch("src.audio_capture.torch.hub.load")
+    def test_pre_buffer_added_to_buffer_on_speech_start(self, mock_torch_load: MagicMock):
+        """Test pre-buffer is added to main buffer when speech starts."""
+        mock_model = MagicMock()
+        mock_torch_load.return_value = (mock_model, None)
+
+        audio_config = AudioConfig()
+        vad_config = VADConfig(threshold=0.5)
+        recorder = AudioRecorder(audio_config, vad_config)
+        recorder._load_vad_model()
+
+        # First, add some data to pre-buffer (no speech)
+        mock_model.return_value.item.return_value = 0.1  # Below threshold
+        pre_buffer_data = np.ones((256, 1), dtype=np.float32) * 0.3
+        recorder._audio_callback(pre_buffer_data, 256, None, None)
+
+        assert len(recorder.pre_buffer) == 256
+        assert len(recorder.buffer) == 0
+
+        # Now speech starts - pre-buffer should be moved to main buffer
+        mock_model.return_value.item.return_value = 0.9  # Above threshold
+        speech_data = np.ones((512, 1), dtype=np.float32) * 0.5
+        recorder._audio_callback(speech_data, 512, None, None)
+
+        # Pre-buffer (256) + speech data (512) = 768
+        assert len(recorder.buffer) == 768
+        assert len(recorder.pre_buffer) == 0
+
+    @patch("src.audio_capture.torch.hub.load")
+    def test_handles_1d_audio_input(self, mock_torch_load: MagicMock):
+        """Test 1D audio input is handled correctly."""
+        mock_model = MagicMock()
+        mock_model.return_value.item.return_value = 0.1
+        mock_torch_load.return_value = (mock_model, None)
+
+        audio_config = AudioConfig()
+        vad_config = VADConfig(threshold=0.5)
+        recorder = AudioRecorder(audio_config, vad_config)
+        recorder._load_vad_model()
+
+        # 1D audio input (some audio libraries return this)
+        indata = np.zeros(512, dtype=np.float32)
+        recorder._audio_callback(indata, 512, None, None)
+
+        assert len(recorder.pre_buffer) == 512
 
 
 class TestAudioRecorderRecordUntilSilence:
