@@ -12,6 +12,7 @@ from src.audio_capture import AudioRecorder
 from src.autopaste import create_autopaster
 from src.clipboard import copy_to_clipboard
 from src.config import Config
+from src.history import TranscriptionHistory
 from src.hotkey import TriggerServer, TriggerType
 from src.notifications import notify_recording_started, notify_text_copied
 from src.punctuation import PunctuationProcessor
@@ -62,6 +63,18 @@ class STTService:
 
         # Trigger server (if enabled)
         self.trigger_server: TriggerServer | None = None
+
+        # History (if enabled)
+        self.history: TranscriptionHistory | None = None
+        if config.history.enabled:
+            self.history = TranscriptionHistory(
+                history_file=config.history.file,
+                max_entries=config.history.max_entries,
+                auto_save=config.history.auto_save,
+            )
+            logger.info(
+                f"History enabled: {config.history.file} (max {config.history.max_entries})"
+            )
 
         # Stats
         self.stats = {
@@ -201,6 +214,15 @@ class STTService:
             )
 
             self.stats["successful_transcriptions"] += 1
+
+            # Add to history (if enabled)
+            if self.history:
+                self.history.add(
+                    text=text,
+                    language=self.transcriber.detected_language,
+                    audio_duration=audio_duration,
+                    transcription_time=transcription_time,
+                )
 
             return text
 

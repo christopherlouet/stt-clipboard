@@ -88,6 +88,16 @@ class HotkeyConfig:
 
 
 @dataclass
+class HistoryConfig:
+    """Transcription history configuration."""
+
+    enabled: bool = True
+    file: str = "./data/history.json"
+    max_entries: int = 100
+    auto_save: bool = True
+
+
+@dataclass
 class Config:
     """Main configuration class."""
 
@@ -99,6 +109,7 @@ class Config:
     paste: PasteConfig = field(default_factory=PasteConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     hotkey: HotkeyConfig = field(default_factory=HotkeyConfig)
+    history: HistoryConfig = field(default_factory=HistoryConfig)
 
     @classmethod
     def from_yaml(cls, config_path: str | None = None) -> "Config":
@@ -131,6 +142,7 @@ class Config:
         paste_data = data.get("paste", {})
         logging_data = data.get("logging", {})
         hotkey_data = data.get("hotkey", {})
+        history_data = data.get("history", {})
 
         return cls(
             audio=AudioConfig(**audio_data),
@@ -141,6 +153,7 @@ class Config:
             paste=PasteConfig(**paste_data),
             logging=LoggingConfig(**logging_data),
             hotkey=HotkeyConfig(**hotkey_data),
+            history=HistoryConfig(**history_data),
         )
 
     def validate(self) -> None:
@@ -243,6 +256,12 @@ class Config:
             "hotkey": {
                 "enabled": self.hotkey.enabled,
                 "socket_path": self.hotkey.socket_path,
+            },
+            "history": {
+                "enabled": self.history.enabled,
+                "file": self.history.file,
+                "max_entries": self.history.max_entries,
+                "auto_save": self.history.auto_save,
             },
         }
 
