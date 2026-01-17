@@ -1,4 +1,26 @@
-"""Configuration management for STT Clipboard."""
+"""Configuration management for STT Clipboard.
+
+This module provides type-safe configuration dataclasses for the STT Clipboard
+service. Configuration can be loaded from YAML files or instantiated directly
+with Python code.
+
+Example:
+    Load configuration from YAML file::
+
+        config = Config.from_yaml("config/config.yaml")
+
+    Create configuration programmatically::
+
+        config = Config(
+            transcription=TranscriptionConfig(model_size="base", language="fr"),
+            audio=AudioConfig(silence_duration=1.5),
+        )
+
+    Validate and use configuration::
+
+        config.validate()
+        transcriber = WhisperTranscriber(config.transcription)
+"""
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -8,7 +30,31 @@ import yaml
 
 @dataclass
 class AudioConfig:
-    """Audio capture configuration."""
+    """Audio capture configuration.
+
+    Controls how audio is recorded from the microphone before transcription.
+    The default values are optimized for speech recognition with Whisper.
+
+    Attributes:
+        sample_rate: Audio sample rate in Hz. Whisper expects 16000 Hz.
+            Supported values: 8000, 16000, 22050, 44100, 48000.
+        channels: Number of audio channels. Use 1 (mono) for speech recognition.
+        silence_duration: Duration of silence (in seconds) before stopping recording.
+            Lower values = faster response, higher values = better capture of pauses.
+        min_speech_duration: Minimum speech duration (in seconds) to accept.
+            Recordings shorter than this are discarded to avoid noise triggers.
+        max_recording_duration: Maximum recording duration (in seconds) as a safety limit.
+        blocksize: Number of samples per audio block. Smaller = lower latency.
+
+    Example:
+        ::
+
+            audio_config = AudioConfig(
+                sample_rate=16000,
+                silence_duration=1.5,  # Stop after 1.5s silence
+                max_recording_duration=60,  # Allow up to 60s recordings
+            )
+    """
 
     sample_rate: int = 16000
     channels: int = 1
@@ -20,7 +66,27 @@ class AudioConfig:
 
 @dataclass
 class VADConfig:
-    """Voice Activity Detection configuration."""
+    """Voice Activity Detection (VAD) configuration.
+
+    Controls the Silero VAD model parameters for detecting speech in audio.
+    VAD helps distinguish speech from background noise.
+
+    Attributes:
+        threshold: Speech probability threshold (0.0 to 1.0).
+            Higher = more strict (may miss quiet speech).
+            Lower = more sensitive (may trigger on noise).
+        min_silence_duration_ms: Minimum silence duration in milliseconds
+            before considering speech has ended.
+        speech_pad_ms: Padding in milliseconds added before and after
+            detected speech segments.
+
+    Example:
+        ::
+
+            vad_config = VADConfig(
+                threshold=0.6,  # Stricter detection (less false positives)
+            )
+    """
 
     threshold: float = 0.5
     min_silence_duration_ms: int = 300
@@ -29,7 +95,42 @@ class VADConfig:
 
 @dataclass
 class TranscriptionConfig:
-    """Transcription configuration."""
+    """Whisper transcription configuration.
+
+    Controls the faster-whisper model parameters for speech-to-text conversion.
+
+    Attributes:
+        model_size: Whisper model size. Options: "tiny", "base", "small", "medium", "large".
+            Larger models are more accurate but slower and use more memory.
+            Recommended: "base" for good accuracy/speed balance.
+        language: Language code for transcription. Empty string "" for auto-detection.
+            Supported: "fr" (French), "en" (English), and other Whisper languages.
+        device: Compute device. "cpu" or "cuda" (if GPU available).
+        compute_type: Quantization type. "int8" for fastest CPU inference,
+            "float16" for GPU, "float32" for maximum accuracy.
+        beam_size: Beam search width. Higher = more accurate but slower.
+            Use 1 for fastest inference, 5 for better accuracy.
+        best_of: Number of candidates to generate. Higher = better quality.
+        temperature: Sampling temperature. 0.0 = deterministic (recommended).
+        download_root: Directory for downloading and caching Whisper models.
+
+    Example:
+        ::
+
+            # Fast configuration for quick responses
+            fast_config = TranscriptionConfig(
+                model_size="tiny",
+                beam_size=1,
+                compute_type="int8",
+            )
+
+            # Accurate configuration for best quality
+            accurate_config = TranscriptionConfig(
+                model_size="base",
+                beam_size=5,
+                language="",  # Auto-detect
+            )
+    """
 
     model_size: str = "tiny"
     language: str = "fr"
@@ -43,7 +144,21 @@ class TranscriptionConfig:
 
 @dataclass
 class PunctuationConfig:
-    """Punctuation post-processing configuration."""
+    """Punctuation post-processing configuration.
+
+    Controls how transcribed text is processed for proper typography.
+
+    Attributes:
+        enabled: Whether to apply punctuation post-processing.
+        french_spacing: Apply French typography rules (space before ? ! : ;).
+            Automatically disabled for English when language is detected.
+
+    Example:
+        ::
+
+            # Disable French spacing for English-only use
+            punct_config = PunctuationConfig(french_spacing=False)
+    """
 
     enabled: bool = True
     french_spacing: bool = True
@@ -51,7 +166,19 @@ class PunctuationConfig:
 
 @dataclass
 class ClipboardConfig:
-    """Clipboard configuration."""
+    """Clipboard configuration.
+
+    Controls how transcribed text is copied to the system clipboard.
+
+    Attributes:
+        enabled: Whether to copy transcribed text to clipboard.
+        timeout: Timeout in seconds for clipboard operations.
+
+    Example:
+        ::
+
+            clipboard_config = ClipboardConfig(timeout=5.0)
+    """
 
     enabled: bool = True
     timeout: float = 2.0
@@ -59,17 +186,58 @@ class ClipboardConfig:
 
 @dataclass
 class PasteConfig:
-    """Auto-paste configuration."""
+    """Auto-paste configuration.
+
+    Controls automatic pasting after copying text to clipboard.
+    This feature simulates keyboard shortcuts (Ctrl+V or Ctrl+Shift+V).
+
+    Attributes:
+        enabled: Whether to enable auto-paste functionality.
+        timeout: Timeout in seconds for paste operations.
+        delay_ms: Delay in milliseconds between copy and paste operations.
+            Allows clipboard to be ready before pasting.
+        preferred_tool: Preferred paste tool. Options:
+            - "auto": Auto-detect best available tool
+            - "xdotool": Use xdotool (X11 only)
+            - "ydotool": Use ydotool (works on Wayland, requires daemon)
+            - "wtype": Use wtype (Wayland only, types text directly)
+
+    Example:
+        ::
+
+            # Use ydotool for Wayland
+            paste_config = PasteConfig(
+                preferred_tool="ydotool",
+                delay_ms=150,  # Longer delay for reliability
+            )
+    """
 
     enabled: bool = True
     timeout: float = 2.0
-    delay_ms: int = 100  # Delay between copy and paste (milliseconds)
-    preferred_tool: str = "auto"  # "auto", "xdotool", "ydotool", "wtype"
+    delay_ms: int = 100
+    preferred_tool: str = "auto"
 
 
 @dataclass
 class LoggingConfig:
-    """Logging configuration."""
+    """Logging configuration.
+
+    Controls application logging behavior.
+
+    Attributes:
+        level: Log level. Options: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL".
+        file: Path to log file. Set to empty string to disable file logging.
+        format: Loguru format string for log messages.
+
+    Example:
+        ::
+
+            # Debug logging to custom file
+            logging_config = LoggingConfig(
+                level="DEBUG",
+                file="./logs/debug.log",
+            )
+    """
 
     level: str = "INFO"
     file: str = "./logs/stt-clipboard.log"
@@ -80,7 +248,28 @@ class LoggingConfig:
 
 @dataclass
 class HotkeyConfig:
-    """Hotkey configuration."""
+    """Hotkey/trigger configuration.
+
+    Controls the Unix socket server for receiving trigger events from
+    keyboard shortcuts or external scripts.
+
+    Attributes:
+        enabled: Whether to enable the trigger server in daemon mode.
+        socket_path: Path to the Unix socket file.
+            The socket is secured with 0600 permissions (owner-only access).
+
+    Example:
+        ::
+
+            hotkey_config = HotkeyConfig(
+                enabled=True,
+                socket_path="/tmp/my-stt-service.sock",
+            )
+
+    Security Note:
+        The Unix socket uses 0600 permissions to prevent unauthorized access.
+        Only the socket owner can send trigger events or read responses.
+    """
 
     enabled: bool = False
     # Unix socket in /tmp is standard practice, secured with 0600 permissions

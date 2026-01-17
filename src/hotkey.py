@@ -1,4 +1,49 @@
-"""Unix socket trigger server for hotkey integration."""
+"""Unix socket trigger server for hotkey integration.
+
+This module provides the trigger server that listens for keyboard shortcut
+events via a Unix socket. It's designed to be integrated with system-level
+hotkey daemons or shell scripts.
+
+Architecture:
+    The trigger system uses a client-server model:
+
+    Keyboard Shortcut → Shell Script → TriggerClient → Unix Socket → TriggerServer → STTService
+
+Trigger types:
+    - TRIGGER_COPY: Copy transcribed text to clipboard only
+    - TRIGGER_PASTE: Copy and auto-paste with Ctrl+V
+    - TRIGGER_PASTE_TERMINAL: Copy and auto-paste with Ctrl+Shift+V (for terminals)
+
+Example:
+    Starting the trigger server::
+
+        from src.hotkey import TriggerServer, TriggerType
+
+        async def handle_trigger(trigger_type: TriggerType):
+            print(f"Received trigger: {trigger_type.value}")
+
+        server = TriggerServer(
+            socket_path="/tmp/stt-clipboard.sock",
+            on_trigger=handle_trigger
+        )
+        await server.start()
+        await server.serve_forever()
+
+    Sending a trigger from a script::
+
+        from src.hotkey import send_trigger
+
+        success = send_trigger(trigger_type="TRIGGER_COPY")
+
+    Using the command line::
+
+        echo "TRIGGER_COPY" | nc -U /tmp/stt-clipboard.sock
+
+Security:
+    The Unix socket is created with 0600 permissions (owner-only access),
+    preventing unauthorized users from triggering transcriptions or
+    reading transcribed text.
+"""
 
 import asyncio
 import os

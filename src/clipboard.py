@@ -1,4 +1,44 @@
-"""Clipboard integration for Wayland, X11, and macOS."""
+"""Cross-platform clipboard integration for Wayland, X11, and macOS.
+
+This module provides a unified clipboard API that automatically detects the
+display server and uses the appropriate clipboard tool. It supports:
+
+- **Wayland**: Uses `wl-copy`/`wl-paste` (wl-clipboard package)
+- **X11**: Uses `xclip` or `xsel` (auto-detected)
+- **macOS**: Uses `pbcopy`/`pbpaste` (built-in)
+
+The module automatically detects the display server from environment variables
+and selects the correct implementation.
+
+Example:
+    Copy text to clipboard::
+
+        from src.clipboard import copy_to_clipboard
+
+        success = copy_to_clipboard("Hello, world!")
+        if success:
+            print("Text copied to clipboard!")
+
+    Using the manager class::
+
+        from src.clipboard import ClipboardManager
+
+        manager = ClipboardManager(timeout=5.0)
+        manager.copy("Some text")
+        text = manager.paste()
+
+    Copy with retry logic::
+
+        manager = ClipboardManager()
+        success = manager.copy_with_retry("Important text", retries=3)
+
+Auto-detection:
+    The display server is detected in this order:
+    1. Platform check (Darwin = macOS)
+    2. XDG_SESSION_TYPE environment variable
+    3. WAYLAND_DISPLAY environment variable
+    4. DISPLAY environment variable (X11 fallback)
+"""
 
 import os
 import platform

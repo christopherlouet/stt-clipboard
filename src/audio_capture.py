@@ -1,4 +1,48 @@
-"""Audio capture with Voice Activity Detection (VAD)."""
+"""Audio capture with Voice Activity Detection (VAD).
+
+This module provides audio recording functionality with intelligent speech detection
+using the Silero VAD (Voice Activity Detection) model. It captures audio from the
+microphone and automatically stops recording when silence is detected.
+
+Key features:
+    - Real-time voice activity detection using Silero VAD
+    - Pre-buffering to capture speech onset (avoids cutting off beginnings)
+    - Configurable silence duration threshold
+    - Callback support for speech start/end events
+    - Automatic audio normalization to float32 [-1, 1]
+
+Example:
+    Basic recording with VAD::
+
+        from src.audio_capture import AudioRecorder
+        from src.config import AudioConfig, VADConfig
+
+        audio_config = AudioConfig(silence_duration=1.2)
+        vad_config = VADConfig(threshold=0.5)
+
+        recorder = AudioRecorder(audio_config, vad_config)
+        audio = recorder.record_until_silence()
+
+        if audio is not None:
+            print(f"Recorded {len(audio) / 16000:.2f} seconds of audio")
+
+    With speech detection callbacks::
+
+        def on_speech():
+            print("Speech detected!")
+
+        recorder = AudioRecorder(
+            audio_config, vad_config,
+            on_speech_start=on_speech
+        )
+
+Audio format:
+    The recorder outputs audio as a numpy array with:
+    - dtype: float32
+    - sample_rate: 16000 Hz (configurable)
+    - channels: mono (1 channel)
+    - range: normalized to [-1.0, 1.0]
+"""
 
 import collections
 import time

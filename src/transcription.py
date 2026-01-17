@@ -1,4 +1,39 @@
-"""Speech-to-text transcription using faster-whisper."""
+"""Speech-to-text transcription using faster-whisper.
+
+This module provides the core transcription functionality using the faster-whisper
+library, which is a CTranslate2-based implementation of OpenAI's Whisper model.
+It offers significant speed improvements over the original Whisper implementation.
+
+Key features:
+    - Automatic language detection (French/English)
+    - INT8 quantization for fast CPU inference
+    - Lazy model loading to minimize startup time
+    - Real-time factor (RTF) logging for performance monitoring
+
+Example:
+    Basic usage with default configuration::
+
+        from src.transcription import WhisperTranscriber
+        from src.config import TranscriptionConfig
+
+        config = TranscriptionConfig(model_size="base", language="")
+        transcriber = WhisperTranscriber(config)
+        transcriber.load_model()
+
+        # Transcribe audio (16kHz float32 numpy array)
+        text = transcriber.transcribe(audio_data)
+
+    Using the convenience function::
+
+        from src.transcription import transcribe_audio
+
+        text = transcribe_audio(audio_data)
+
+Performance tips:
+    - Use "int8" compute_type for fastest CPU inference
+    - Use "tiny" or "base" models for real-time applications
+    - Pre-load the model at service startup to avoid cold-start latency
+"""
 
 import time
 from pathlib import Path

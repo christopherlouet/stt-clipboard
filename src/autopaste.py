@@ -1,4 +1,47 @@
-"""Auto-paste functionality for simulating keyboard paste operations."""
+"""Auto-paste functionality for simulating keyboard paste operations.
+
+This module provides automatic pasting after text is copied to the clipboard.
+It simulates keyboard shortcuts (Ctrl+V or Ctrl+Shift+V) using various tools
+depending on the display server.
+
+Supported paste tools:
+    - **xdotool**: X11 only, simulates Ctrl+V
+    - **ydotool**: Universal (X11 and Wayland), requires ydotoold daemon
+    - **wtype**: Wayland only, types text directly (doesn't simulate Ctrl+V)
+    - **osascript**: macOS only, simulates Cmd+V via System Events
+
+Auto-detection:
+    The module automatically detects which tools are available and selects
+    the most appropriate one. Priority order: osascript (macOS), xdotool, ydotool, wtype.
+
+Example:
+    Simple auto-paste::
+
+        from src.autopaste import auto_paste
+
+        # Uses best available tool
+        success = auto_paste()
+
+    Using a specific tool::
+
+        from src.autopaste import create_autopaster
+
+        paster = create_autopaster(preferred_tool="ydotool")
+        paster.paste()
+
+    Terminal paste (Ctrl+Shift+V)::
+
+        from src.autopaste import YdotoolPaster
+
+        terminal_paster = YdotoolPaster(use_shift=True)
+        terminal_paster.paste()  # Sends Ctrl+Shift+V
+
+Requirements:
+    - xdotool: ``sudo apt install xdotool``
+    - ydotool: ``sudo apt install ydotool`` + start ydotoold daemon
+    - wtype: ``sudo apt install wtype``
+    - osascript: Built-in on macOS (requires Accessibility permissions)
+"""
 
 import os
 import platform
