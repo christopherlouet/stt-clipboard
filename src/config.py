@@ -39,6 +39,7 @@ class TranscriptionConfig:
     best_of: int = 1
     temperature: float = 0.0
     download_root: str = "./models"
+    streaming_enabled: bool = False  # Enable streaming transcription output
 
 
 @dataclass
@@ -220,6 +221,7 @@ class Config:
                 "best_of": self.transcription.best_of,
                 "temperature": self.transcription.temperature,
                 "download_root": self.transcription.download_root,
+                "streaming_enabled": self.transcription.streaming_enabled,
             },
             "punctuation": {
                 "enabled": self.punctuation.enabled,
