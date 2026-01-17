@@ -1,4 +1,44 @@
-"""Main orchestration for STT Clipboard service."""
+"""Main orchestration for STT Clipboard service.
+
+This module provides the main entry point and service orchestration for the
+STT Clipboard application. It coordinates all components:
+
+1. Audio recording with VAD
+2. Speech-to-text transcription with Whisper
+3. Punctuation post-processing
+4. Clipboard copying
+5. Optional auto-paste
+
+The service can run in two modes:
+    - **daemon**: Runs as a background service, listening for trigger events
+      via Unix socket. Suitable for systemd service deployment.
+    - **oneshot**: Performs a single transcription and exits. Useful for
+      testing and debugging.
+
+Example:
+    Run as daemon::
+
+        python -m src.main --daemon
+        python -m src.main --mode daemon
+
+    Run single transcription::
+
+        python -m src.main --mode oneshot
+
+    With custom config::
+
+        python -m src.main --config /path/to/config.yaml --log-level DEBUG
+
+Trigger modes (daemon only):
+    - TRIGGER_COPY: Transcribe and copy to clipboard
+    - TRIGGER_PASTE: Transcribe, copy, and auto-paste (Ctrl+V)
+    - TRIGGER_PASTE_TERMINAL: Transcribe, copy, and paste for terminals (Ctrl+Shift+V)
+
+Architecture:
+    The STTService class orchestrates the pipeline:
+
+    Trigger → Audio Recording → VAD → Transcription → Punctuation → Clipboard → [Paste]
+"""
 
 import argparse
 import asyncio

@@ -1,4 +1,44 @@
-"""French punctuation post-processing for transcribed text."""
+"""Language-aware punctuation post-processing for transcribed text.
+
+This module provides punctuation normalization and typography rules for
+transcribed text, with support for French and English typography conventions.
+
+French typography rules:
+    - Space BEFORE: ? ! : ;
+    - No space before: , .
+    - Proper handling of guillemets (« »)
+    - Contraction handling (l', d', qu', etc.)
+
+English typography rules:
+    - No space before any punctuation
+    - Space after punctuation marks
+
+Example:
+    Basic usage with auto-detected language::
+
+        from src.punctuation import apply_french_punctuation
+
+        # French text
+        text = apply_french_punctuation(
+            "comment allez vous?",
+            detected_language="fr"
+        )
+        # Result: "Comment allez vous ?"
+
+        # English text
+        text = apply_french_punctuation(
+            "how are you?",
+            detected_language="en"
+        )
+        # Result: "How are you?"
+
+    Using the processor class::
+
+        from src.punctuation import PunctuationProcessor
+
+        processor = PunctuationProcessor(enable_french_spacing=True)
+        text = processor.process("bonjour comment vas tu", detected_language="fr")
+"""
 
 import re
 
