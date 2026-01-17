@@ -291,5 +291,97 @@ class TestNotifyTextCopied:
         assert result is True
 
 
+class TestNotifyNoSpeechDetected:
+    """Tests for notify_no_speech_detected function."""
+
+    @patch("src.notifications.send_notification")
+    def test_calls_send_notification_with_correct_title(self, mock_send: MagicMock):
+        """Test that the correct title is used."""
+        from src.notifications import notify_no_speech_detected
+
+        mock_send.return_value = True
+
+        notify_no_speech_detected()
+
+        mock_send.assert_called_once()
+        call_args = mock_send.call_args
+        assert call_args[0][0] == "STT Clipboard"
+
+    @patch("src.notifications.send_notification")
+    def test_includes_no_speech_message(self, mock_send: MagicMock):
+        """Test that the no-speech message is included."""
+        from src.notifications import notify_no_speech_detected
+
+        mock_send.return_value = True
+
+        notify_no_speech_detected()
+
+        call_args = mock_send.call_args
+        message = call_args[0][1]
+        # Should indicate no speech was detected
+        assert "parole" in message.lower() or "speech" in message.lower()
+
+    @patch("src.notifications.send_notification")
+    def test_uses_low_urgency(self, mock_send: MagicMock):
+        """Test that low urgency is used (not critical)."""
+        from src.notifications import notify_no_speech_detected
+
+        mock_send.return_value = True
+
+        notify_no_speech_detected()
+
+        call_args = mock_send.call_args
+        assert call_args[1]["urgency"] == "low"
+
+    @patch("src.notifications.send_notification")
+    def test_returns_true_on_success(self, mock_send: MagicMock):
+        """Test that True is returned on success."""
+        from src.notifications import notify_no_speech_detected
+
+        mock_send.return_value = True
+
+        result = notify_no_speech_detected()
+
+        assert result is True
+
+    @patch("src.notifications.send_notification")
+    def test_returns_false_on_failure(self, mock_send: MagicMock):
+        """Test that False is returned on failure."""
+        from src.notifications import notify_no_speech_detected
+
+        mock_send.return_value = False
+
+        result = notify_no_speech_detected()
+
+        assert result is False
+
+    @patch("src.notifications.send_notification")
+    def test_custom_duration_in_message(self, mock_send: MagicMock):
+        """Test that custom timeout duration is included in message."""
+        from src.notifications import notify_no_speech_detected
+
+        mock_send.return_value = True
+
+        notify_no_speech_detected(timeout_seconds=30)
+
+        call_args = mock_send.call_args
+        message = call_args[0][1]
+        assert "30" in message
+
+    @patch("src.notifications.send_notification")
+    def test_default_duration_in_message(self, mock_send: MagicMock):
+        """Test that default timeout duration is used if not specified."""
+        from src.notifications import notify_no_speech_detected
+
+        mock_send.return_value = True
+
+        notify_no_speech_detected()
+
+        # Should have some duration value in the message
+        mock_send.assert_called_once()
+        message = mock_send.call_args[0][1]
+        assert "30" in message  # Default timeout is 30s
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
