@@ -2,7 +2,7 @@
 
 import collections
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 
 import numpy as np
 import sounddevice as sd
@@ -249,6 +249,51 @@ class AudioRecorder:
         logger.info(f"Recording complete: {recording_duration:.2f}s ({len(audio_data)} samples)")
 
         return audio_data
+
+    def record_continuous(self) -> Iterator[np.ndarray]:
+        """Record audio continuously, yielding segments separated by silence.
+
+        This is a generator that yields audio segments. Each segment is a complete
+        utterance followed by silence.
+
+        Yields:
+            Audio data as numpy array (float32) for each segment
+        """
+        import threading
+
+        self._continuous_mode = True
+        self._stop_continuous = threading.Event()
+
+        logger.info("Starting continuous recording mode...")
+
+        while not self._stop_continuous.is_set():
+            # Record a single segment
+            audio = self.record_until_silence()
+
+            if audio is not None and not self._stop_continuous.is_set():
+                yield audio
+
+            # Small delay before next segment
+            if not self._stop_continuous.is_set():
+                time.sleep(0.1)
+
+        self._continuous_mode = False
+        logger.info("Continuous recording mode stopped")
+
+    def stop_continuous(self) -> None:
+        """Stop continuous recording mode."""
+        if hasattr(self, "_stop_continuous"):
+            self._stop_continuous.set()
+            self.is_recording = False
+            logger.info("Stopping continuous recording...")
+
+    def is_continuous_recording(self) -> bool:
+        """Check if continuous recording mode is active.
+
+        Returns:
+            True if continuous recording is active
+        """
+        return getattr(self, "_continuous_mode", False)
 
     def get_available_devices(self) -> list:
         """Get list of available audio input devices.

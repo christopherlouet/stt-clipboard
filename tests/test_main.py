@@ -839,6 +839,8 @@ class TestMainFunction:
         mock_args = MagicMock()
         mock_args.mode = "daemon"
         mock_args.daemon = False
+        mock_args.tui = False
+        mock_args.continuous = False
         mock_args.config = "config/config.yaml"
         mock_args.log_level = None
         mock_parse_args.return_value = mock_args
@@ -882,6 +884,8 @@ class TestMainFunction:
         mock_args = MagicMock()
         mock_args.mode = "oneshot"
         mock_args.daemon = False
+        mock_args.tui = False
+        mock_args.continuous = False
         mock_args.config = "config/config.yaml"
         mock_args.log_level = None
         mock_parse_args.return_value = mock_args
@@ -922,6 +926,8 @@ class TestMainFunction:
         mock_args = MagicMock()
         mock_args.mode = "oneshot"  # Default
         mock_args.daemon = True  # Flag overrides
+        mock_args.tui = False
+        mock_args.continuous = False
         mock_args.config = "config/config.yaml"
         mock_args.log_level = None
         mock_parse_args.return_value = mock_args
@@ -960,6 +966,8 @@ class TestMainFunction:
         mock_args = MagicMock()
         mock_args.mode = "daemon"
         mock_args.daemon = False
+        mock_args.tui = False
+        mock_args.continuous = False
         mock_args.config = "config/config.yaml"
         mock_args.log_level = "DEBUG"  # Override
         mock_parse_args.return_value = mock_args
