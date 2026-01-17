@@ -8,8 +8,11 @@ from src.config import Config
 class TestCheckClipboardTool:
     """Tests for check_clipboard_tool helper."""
 
+    @patch("src.clipboard.is_macos", return_value=False)
     @patch("shutil.which")
-    def test_returns_true_when_wl_copy_available(self, mock_which: MagicMock):
+    def test_returns_true_when_wl_copy_available(
+        self, mock_which: MagicMock, mock_is_macos: MagicMock
+    ):
         """Test returns True when wl-copy is available."""
         from src.clipboard import check_clipboard_tool
 
@@ -20,8 +23,11 @@ class TestCheckClipboardTool:
 
         assert result is True
 
+    @patch("src.clipboard.is_macos", return_value=False)
     @patch("shutil.which")
-    def test_returns_true_when_xclip_available(self, mock_which: MagicMock):
+    def test_returns_true_when_xclip_available(
+        self, mock_which: MagicMock, mock_is_macos: MagicMock
+    ):
         """Test returns True when xclip is available for X11."""
         from src.clipboard import check_clipboard_tool
 
@@ -32,8 +38,11 @@ class TestCheckClipboardTool:
 
         assert result is True
 
+    @patch("src.clipboard.is_macos", return_value=False)
     @patch("shutil.which")
-    def test_returns_true_when_xsel_available(self, mock_which: MagicMock):
+    def test_returns_true_when_xsel_available(
+        self, mock_which: MagicMock, mock_is_macos: MagicMock
+    ):
         """Test returns True when xsel is available for X11."""
         from src.clipboard import check_clipboard_tool
 
@@ -44,8 +53,11 @@ class TestCheckClipboardTool:
 
         assert result is True
 
+    @patch("src.clipboard.is_macos", return_value=False)
     @patch("shutil.which")
-    def test_returns_false_when_no_tools_available(self, mock_which: MagicMock):
+    def test_returns_false_when_no_tools_available(
+        self, mock_which: MagicMock, mock_is_macos: MagicMock
+    ):
         """Test returns False when no clipboard tools are available."""
         from src.clipboard import check_clipboard_tool
 
@@ -55,6 +67,20 @@ class TestCheckClipboardTool:
             result = check_clipboard_tool()
 
         assert result is False
+
+    @patch("src.clipboard.is_macos", return_value=True)
+    @patch("shutil.which")
+    def test_returns_true_when_pbcopy_available_on_macos(
+        self, mock_which: MagicMock, mock_is_macos: MagicMock
+    ):
+        """Test returns True when pbcopy is available on macOS."""
+        from src.clipboard import check_clipboard_tool
+
+        mock_which.side_effect = lambda x: "/usr/bin/pbcopy" if x == "pbcopy" else None
+
+        result = check_clipboard_tool()
+
+        assert result is True
 
 
 class TestCheckPasteTool:
