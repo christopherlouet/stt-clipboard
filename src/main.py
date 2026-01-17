@@ -457,9 +457,9 @@ def main():
 
     parser.add_argument(
         "--mode",
-        choices=["daemon", "oneshot", "continuous"],
+        choices=["daemon", "oneshot", "continuous", "tui"],
         default="daemon",
-        help="Run mode: daemon (service), oneshot (single), or continuous (dictation)",
+        help="Run mode: daemon (service), oneshot (single), continuous (dictation), or tui (text interface)",
     )
 
     parser.add_argument(
@@ -484,10 +484,18 @@ def main():
         help="Override log level from config",
     )
 
+    parser.add_argument(
+        "--tui",
+        action="store_true",
+        help="Run in TUI mode (equivalent to --mode tui)",
+    )
+
     args = parser.parse_args()
 
     # Determine mode
-    if args.daemon:
+    if args.tui:
+        args.mode = "tui"
+    elif args.daemon:
         args.mode = "daemon"
     elif args.continuous:
         args.mode = "continuous"
@@ -515,6 +523,13 @@ def main():
         lang_display = config.transcription.language or "auto-detect"
         logger.info(f"Language: {lang_display}")
         logger.info("=" * 60)
+
+        # Run TUI mode (separate from service modes)
+        if args.mode == "tui":
+            from src.tui import run_tui
+
+            run_tui(config)
+            return
 
         # Create service
         service = STTService(config)
