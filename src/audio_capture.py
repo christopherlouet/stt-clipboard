@@ -1,8 +1,9 @@
 """Audio capture with Voice Activity Detection (VAD)."""
 
 import collections
+import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 
 import numpy as np
 import sounddevice as sd
@@ -56,6 +57,12 @@ class AudioRecorder:
 
         # Minimum speech duration (avoid false starts)
         self.min_speech_samples = int(audio_config.min_speech_duration * audio_config.sample_rate)
+
+        # Continuous mode state
+        self._continuous_mode = False
+        self._stop_continuous = threading.Event()
+        self._segment_ready = threading.Event()
+        self._current_segment: np.ndarray | None = None
 
         logger.info(
             f"AudioRecorder initialized: {audio_config.sample_rate}Hz, "
@@ -178,9 +185,21 @@ class AudioRecorder:
                 silence_duration = current_time - self.last_speech_time
 
                 if silence_duration >= self.audio_config.silence_duration:
-                    # Silence detected, stop recording
+                    # Silence detected
                     logger.debug(f"Silence detected after {silence_duration:.2f}s")
-                    self.is_recording = False
+
+                    if self._continuous_mode:
+                        # In continuous mode, yield segment and reset for next
+                        if len(self.buffer) >= self.min_speech_samples:
+                            self._current_segment = np.array(list(self.buffer), dtype=np.float32)
+                            self._segment_ready.set()
+                        # Reset for next segment
+                        self.buffer.clear()
+                        self.speech_started = False
+                        self.last_speech_time = current_time
+                    else:
+                        # Normal mode: stop recording
+                        self.is_recording = False
 
             else:
                 # Still waiting for speech, add to pre-buffer
@@ -249,6 +268,89 @@ class AudioRecorder:
         logger.info(f"Recording complete: {recording_duration:.2f}s ({len(audio_data)} samples)")
 
         return audio_data
+
+    def record_continuous(self) -> Iterator[np.ndarray]:
+        """Record audio continuously, yielding segments separated by silence.
+
+        This generator method records audio and yields complete speech segments
+        as they are detected (separated by silence). Use stop_continuous() to
+        stop the recording.
+
+        Yields:
+            Audio segments as numpy arrays (float32)
+        """
+        # Reset state
+        self.buffer.clear()
+        self.pre_buffer.clear()
+        self.is_recording = True
+        self.speech_started = False
+        self.last_speech_time = time.time()
+        self.recording_start_time = time.time()
+
+        # Enable continuous mode
+        self._continuous_mode = True
+        self._stop_continuous.clear()
+        self._segment_ready.clear()
+        self._current_segment = None
+
+        # Ensure VAD model is loaded
+        self._load_vad_model()
+
+        logger.info("Starting continuous recording...")
+
+        try:
+            # Open audio stream
+            with sd.InputStream(
+                samplerate=self.audio_config.sample_rate,
+                channels=self.audio_config.channels,
+                dtype=np.float32,
+                blocksize=self.audio_config.blocksize,
+                callback=self._audio_callback,
+            ):
+                while not self._stop_continuous.is_set():
+                    # Wait for a segment to be ready or stop signal
+                    if self._segment_ready.wait(timeout=0.1):
+                        self._segment_ready.clear()
+
+                        if self._current_segment is not None:
+                            segment = self._current_segment
+                            self._current_segment = None
+
+                            duration = len(segment) / self.audio_config.sample_rate
+                            logger.info(f"Segment ready: {duration:.2f}s ({len(segment)} samples)")
+                            yield segment
+
+                # Yield any remaining audio in buffer
+                if len(self.buffer) >= self.min_speech_samples:
+                    final_segment = np.array(list(self.buffer), dtype=np.float32)
+                    duration = len(final_segment) / self.audio_config.sample_rate
+                    logger.info(f"Final segment: {duration:.2f}s ({len(final_segment)} samples)")
+                    yield final_segment
+
+        except Exception as e:
+            logger.error(f"Continuous recording failed: {e}")
+
+        finally:
+            self._continuous_mode = False
+            self.is_recording = False
+            logger.info("Continuous recording stopped")
+
+    def stop_continuous(self) -> None:
+        """Stop continuous recording mode.
+
+        Call this method to gracefully stop the record_continuous() generator.
+        Any remaining audio in the buffer will be yielded as a final segment.
+        """
+        logger.info("Stopping continuous recording...")
+        self._stop_continuous.set()
+
+    def is_continuous_recording(self) -> bool:
+        """Check if continuous recording is active.
+
+        Returns:
+            True if continuous recording is in progress
+        """
+        return self._continuous_mode and self.is_recording
 
     def get_available_devices(self) -> list:
         """Get list of available audio input devices.
