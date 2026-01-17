@@ -6,6 +6,7 @@ import pytest
 from src.punctuation import (
     PunctuationProcessor,
     apply_french_punctuation,
+    apply_punctuation_rules,
     clean_whisper_artifacts,
     format_for_code,
 )
@@ -361,6 +362,97 @@ class TestPunctuationProcessor:
             processor = PunctuationProcessor()
             result = processor.process("hello. how are you ? very good !", detected_language="en")
             assert result == "Hello. How are you? Very good!"
+
+
+class TestMultiLanguageSupport:
+    """Tests for multi-language punctuation support (DE, ES, IT)."""
+
+    class TestGermanPunctuation:
+        """Tests for German punctuation rules."""
+
+        def test_no_space_before_punctuation(self):
+            """German should not have space before punctuation."""
+            result = apply_punctuation_rules(
+                "wie geht es dir ?", enable_french_spacing=False, detected_language="de"
+            )
+            assert result == "Wie geht es dir?"
+
+        def test_removes_german_filler_words(self):
+            """German filler words should be removed."""
+            result = clean_whisper_artifacts("also aehm ich denke", detected_language="de")
+            assert "also" not in result.lower()
+            assert "aehm" not in result.lower()
+
+        def test_capitalizes_sentences(self):
+            """German should capitalize after sentence-ending punctuation."""
+            result = apply_punctuation_rules(
+                "hallo. wie geht es?", enable_french_spacing=False, detected_language="de"
+            )
+            assert result == "Hallo. Wie geht es?"
+
+    class TestSpanishPunctuation:
+        """Tests for Spanish punctuation rules."""
+
+        def test_no_space_before_punctuation(self):
+            """Spanish should not have space before punctuation."""
+            result = apply_punctuation_rules(
+                "como estas ?", enable_french_spacing=False, detected_language="es"
+            )
+            assert result == "Como estas?"
+
+        def test_removes_spanish_filler_words(self):
+            """Spanish filler words should be removed."""
+            result = clean_whisper_artifacts("pues bueno este yo creo", detected_language="es")
+            assert "pues" not in result.lower()
+            assert "bueno" not in result.lower()
+            assert "este" not in result.lower()
+
+        def test_removes_multi_word_spanish_filler(self):
+            """Spanish multi-word filler 'o sea' should be removed."""
+            result = clean_whisper_artifacts("yo o sea pienso que", detected_language="es")
+            assert "o sea" not in result.lower()
+
+    class TestItalianPunctuation:
+        """Tests for Italian punctuation rules."""
+
+        def test_no_space_before_punctuation(self):
+            """Italian should not have space before punctuation."""
+            result = apply_punctuation_rules(
+                "come stai ?", enable_french_spacing=False, detected_language="it"
+            )
+            assert result == "Come stai?"
+
+        def test_removes_italian_filler_words(self):
+            """Italian filler words should be removed."""
+            result = clean_whisper_artifacts("allora cioe insomma io", detected_language="it")
+            assert "allora" not in result.lower()
+            assert "cioe" not in result.lower()
+            assert "insomma" not in result.lower()
+
+        def test_capitalizes_sentences(self):
+            """Italian should capitalize after sentence-ending punctuation."""
+            result = apply_punctuation_rules(
+                "ciao. come stai?", enable_french_spacing=False, detected_language="it"
+            )
+            assert result == "Ciao. Come stai?"
+
+    class TestIntegration:
+        """Integration tests for multi-language processing."""
+
+        def test_full_german_sentence(self):
+            processor = PunctuationProcessor(enable_french_spacing=False)
+            result = processor.process("hallo aehm wie geht es ?", detected_language="de")
+            assert result == "Hallo wie geht es?"
+
+        def test_full_spanish_sentence(self):
+            processor = PunctuationProcessor(enable_french_spacing=False)
+            result = processor.process("hola pues como estas ?", detected_language="es")
+            assert result == "Hola como estas?"
+
+        def test_full_italian_sentence(self):
+            processor = PunctuationProcessor(enable_french_spacing=False)
+            result = processor.process("ciao allora come stai ?", detected_language="it")
+            assert result == "Ciao come stai?"
 
 
 if __name__ == "__main__":
