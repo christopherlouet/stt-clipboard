@@ -533,6 +533,52 @@ class ClipboardManager(BaseClipboardManager):
         logger.error(f"Failed to copy to clipboard after {retries + 1} attempts")
         return False
 
+    def copy_with_backoff(
+        self,
+        text: str,
+        max_retries: int = 3,
+        backoff_base: float = 0.1,
+        max_delay: float = 2.0,
+    ) -> bool:
+        """Copy text to clipboard with exponential backoff retry.
+
+        Uses exponential backoff strategy: delay = backoff_base * 2^attempt
+        The delay is capped at max_delay.
+
+        Args:
+            text: Text to copy
+            max_retries: Maximum number of retry attempts (default: 3)
+            backoff_base: Base delay in seconds (default: 0.1)
+            max_delay: Maximum delay between retries in seconds (default: 2.0)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        import time
+
+        total_attempts = max_retries + 1
+
+        for attempt in range(total_attempts):
+            try:
+                if self._manager.copy(text):
+                    if attempt > 0:
+                        logger.info(f"Clipboard copy succeeded on attempt {attempt + 1}")
+                    return True
+            except Exception as e:
+                logger.warning(f"Clipboard copy exception: {e}")
+
+            # If this wasn't the last attempt, wait with exponential backoff
+            if attempt < max_retries:
+                delay = min(backoff_base * (2**attempt), max_delay)
+                logger.warning(
+                    f"Clipboard copy failed, retrying in {delay:.2f}s "
+                    f"({attempt + 1}/{max_retries})..."
+                )
+                time.sleep(delay)
+
+        logger.error(f"Failed to copy to clipboard after {total_attempts} attempts")
+        return False
+
 
 # Convenience functions
 _default_manager: ClipboardManager | None = None
@@ -594,6 +640,34 @@ def clear_clipboard(timeout: float = 2.0) -> bool:
     """
     manager = get_clipboard_manager(timeout=timeout)
     return manager.clear()
+
+
+def copy_to_clipboard_with_backoff(
+    text: str,
+    timeout: float = 2.0,
+    max_retries: int = 3,
+    backoff_base: float = 0.1,
+    max_delay: float = 2.0,
+) -> bool:
+    """Copy text to clipboard with exponential backoff (convenience function).
+
+    Uses exponential backoff strategy: delay = backoff_base * 2^attempt
+    The delay is capped at max_delay.
+
+    Args:
+        text: Text to copy
+        timeout: Operation timeout
+        max_retries: Maximum number of retry attempts (default: 3)
+        backoff_base: Base delay in seconds (default: 0.1)
+        max_delay: Maximum delay between retries in seconds (default: 2.0)
+
+    Returns:
+        True if successful, False otherwise
+    """
+    manager = get_clipboard_manager(timeout=timeout)
+    return manager.copy_with_backoff(
+        text, max_retries=max_retries, backoff_base=backoff_base, max_delay=max_delay
+    )
 
 
 # Example usage and testing

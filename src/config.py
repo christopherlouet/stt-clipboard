@@ -55,6 +55,9 @@ class ClipboardConfig:
 
     enabled: bool = True
     timeout: float = 2.0
+    max_retries: int = 3  # Maximum retry attempts with backoff
+    backoff_base: float = 0.1  # Base delay in seconds for exponential backoff
+    max_delay: float = 2.0  # Maximum delay between retries
 
 
 @dataclass
@@ -228,6 +231,9 @@ class Config:
             "clipboard": {
                 "enabled": self.clipboard.enabled,
                 "timeout": self.clipboard.timeout,
+                "max_retries": self.clipboard.max_retries,
+                "backoff_base": self.clipboard.backoff_base,
+                "max_delay": self.clipboard.max_delay,
             },
             "paste": {
                 "enabled": self.paste.enabled,
