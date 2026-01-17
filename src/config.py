@@ -142,6 +142,7 @@ class TranscriptionConfig:
     best_of: int = 1
     temperature: float = 0.0
     download_root: str = "./models"
+    warmup_enabled: bool = True  # Warmup model at startup for faster first transcription
 
 
 @dataclass
@@ -413,6 +414,7 @@ class Config:
                 "best_of": self.transcription.best_of,
                 "temperature": self.transcription.temperature,
                 "download_root": self.transcription.download_root,
+                "warmup_enabled": self.transcription.warmup_enabled,
             },
             "punctuation": {
                 "enabled": self.punctuation.enabled,

@@ -56,6 +56,7 @@ from src.hotkey import TriggerServer, TriggerType
 from src.notifications import notify_recording_started, notify_text_copied
 from src.punctuation import PunctuationProcessor
 from src.transcription import WhisperTranscriber
+from src.warmup import warmup_transcriber
 
 
 class STTService:
@@ -125,6 +126,15 @@ class STTService:
         # Pre-load VAD model
         logger.info("Pre-loading VAD model...")
         self.audio_recorder._load_vad_model()
+
+        # Warmup transcription model if enabled
+        if self.config.transcription.warmup_enabled:
+            logger.info("Warming up transcription model...")
+            warmup_result = warmup_transcriber(self.transcriber)
+            if warmup_result.success:
+                logger.info(f"✓ Model warmup completed in {warmup_result.duration_seconds:.2f}s")
+            else:
+                logger.warning(f"Model warmup failed: {warmup_result.error_message}")
 
         logger.info("✓ Service initialization complete")
 
