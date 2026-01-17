@@ -91,6 +91,8 @@ class VADConfig:
     threshold: float = 0.5
     min_silence_duration_ms: int = 300
     speech_pad_ms: int = 300
+    cache_enabled: bool = False  # Enable LRU cache for VAD results
+    cache_size: int = 100  # Maximum number of cached audio chunks
 
 
 @dataclass
@@ -399,6 +401,8 @@ class Config:
                 "threshold": self.vad.threshold,
                 "min_silence_duration_ms": self.vad.min_silence_duration_ms,
                 "speech_pad_ms": self.vad.speech_pad_ms,
+                "cache_enabled": self.vad.cache_enabled,
+                "cache_size": self.vad.cache_size,
             },
             "transcription": {
                 "model_size": self.transcription.model_size,
