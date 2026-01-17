@@ -9,6 +9,7 @@ import sounddevice as sd
 import torch
 from loguru import logger
 
+from src.cache import AudioChunkCache
 from src.config import AudioConfig, VADConfig
 
 
@@ -56,6 +57,12 @@ class AudioRecorder:
 
         # Minimum speech duration (avoid false starts)
         self.min_speech_samples = int(audio_config.min_speech_duration * audio_config.sample_rate)
+
+        # VAD cache (optional, for performance optimization)
+        self.vad_cache: AudioChunkCache | None = None
+        if vad_config.cache_enabled:
+            self.vad_cache = AudioChunkCache(max_size=vad_config.cache_size)
+            logger.info(f"VAD cache enabled: max_size={vad_config.cache_size}")
 
         logger.info(
             f"AudioRecorder initialized: {audio_config.sample_rate}Hz, "
@@ -105,22 +112,40 @@ class AudioRecorder:
             if np.abs(audio_chunk).max() > 1.0:
                 audio_chunk = audio_chunk / 32768.0
 
-            # Convert to torch tensor
-            audio_tensor = torch.from_numpy(audio_chunk)
+            # Use cache if enabled
+            if self.vad_cache is not None:
+                return self.vad_cache.get_or_compute(
+                    audio_chunk, lambda: self._vad_inference(audio_chunk)
+                )
 
-            # Ensure 1D
-            if audio_tensor.dim() > 1:
-                audio_tensor = audio_tensor.squeeze()
-
-            # VAD inference
-            with torch.no_grad():
-                speech_prob = self.vad_model(audio_tensor, self._vad_sample_rate).item()
-
-            return speech_prob
+            # Direct VAD inference (no cache)
+            return self._vad_inference(audio_chunk)
 
         except Exception as e:
             logger.warning(f"VAD detection failed: {e}")
             return 0.0
+
+    def _vad_inference(self, audio_chunk: np.ndarray) -> float:
+        """Perform VAD inference on audio chunk.
+
+        Args:
+            audio_chunk: Audio data (float32, normalized to [-1, 1])
+
+        Returns:
+            Speech probability (0.0 to 1.0)
+        """
+        # Convert to torch tensor
+        audio_tensor = torch.from_numpy(audio_chunk)
+
+        # Ensure 1D
+        if audio_tensor.dim() > 1:
+            audio_tensor = audio_tensor.squeeze()
+
+        # VAD inference
+        with torch.no_grad():
+            speech_prob = self.vad_model(audio_tensor, self._vad_sample_rate).item()
+
+        return speech_prob
 
     def _audio_callback(self, indata: np.ndarray, frames: int, time_info, status):
         """Callback for sounddevice stream.
@@ -273,6 +298,16 @@ class AudioRecorder:
         else:
             sd.default.reset()
             logger.info("Reset to system default audio device")
+
+    def get_cache_stats(self) -> dict | None:
+        """Get VAD cache statistics.
+
+        Returns:
+            Dictionary with cache stats if cache is enabled, None otherwise.
+        """
+        if self.vad_cache is not None:
+            return self.vad_cache.stats()
+        return None
 
 
 # Convenience functions
