@@ -299,6 +299,94 @@ class STTService:
 
             return 1
 
+    async def run_continuous(self):
+        """Run service in continuous dictation mode.
+
+        Continuously records and transcribes audio segments, copying each
+        to the clipboard. Press Ctrl+C to stop.
+        """
+        logger.info("Running in continuous dictation mode...")
+
+        # Initialize
+        await self.initialize()
+
+        logger.info("\n" + "=" * 60)
+        logger.info("Continuous Dictation Mode")
+        logger.info("Speak into your microphone...")
+        logger.info("Each pause will trigger transcription and clipboard copy")
+        logger.info("Press Ctrl+C to stop")
+        logger.info("=" * 60 + "\n")
+
+        try:
+            segment_count = 0
+
+            for audio in self.audio_recorder.record_continuous():
+                segment_count += 1
+                self.stats["total_requests"] += 1
+
+                audio_duration = len(audio) / self.config.audio.sample_rate
+                self.stats["total_audio_duration"] += audio_duration
+
+                logger.info(f"\n--- Segment #{segment_count} ---")
+
+                # Transcribe
+                logger.info("Transcribing...")
+                transcription_start = time.time()
+                text = await asyncio.to_thread(self.transcriber.transcribe, audio)
+                transcription_time = time.time() - transcription_start
+                self.stats["total_transcription_time"] += transcription_time
+
+                if not text or not text.strip():
+                    logger.warning("Empty transcription, skipping")
+                    self.stats["failed_transcriptions"] += 1
+                    continue
+
+                # Post-process
+                if self.config.punctuation.enabled:
+                    detected_lang = self.transcriber.detected_language
+                    text = self.punctuation_processor.process(text, detected_language=detected_lang)
+
+                logger.info(f"Transcribed: {text}")
+
+                # Copy to clipboard
+                if self.config.clipboard.enabled:
+                    success = await asyncio.to_thread(
+                        copy_to_clipboard, text, self.config.clipboard.timeout
+                    )
+                    if success:
+                        logger.info("✓ Copied to clipboard")
+                        notify_text_copied(text)
+                    else:
+                        logger.error("Failed to copy to clipboard")
+                        self.stats["failed_transcriptions"] += 1
+                        continue
+
+                self.stats["successful_transcriptions"] += 1
+
+                # Add to history
+                if self.history:
+                    self.history.add(
+                        text=text,
+                        language=self.transcriber.detected_language,
+                        audio_duration=audio_duration,
+                        transcription_time=transcription_time,
+                    )
+
+                rtf = transcription_time / audio_duration if audio_duration > 0 else 0
+                logger.info(
+                    f"Segment complete (audio: {audio_duration:.2f}s, "
+                    f"transcription: {transcription_time:.2f}s, RTF: {rtf:.2f}x)"
+                )
+
+        except KeyboardInterrupt:
+            logger.info("\nStopping continuous mode...")
+            self.audio_recorder.stop_continuous()
+
+        finally:
+            await self.shutdown()
+
+        return 0
+
     async def shutdown(self):
         """Shutdown service gracefully."""
         logger.info("Shutting down service...")
@@ -369,9 +457,9 @@ def main():
 
     parser.add_argument(
         "--mode",
-        choices=["daemon", "oneshot"],
+        choices=["daemon", "oneshot", "continuous"],
         default="daemon",
-        help="Run mode: daemon (service) or oneshot (single transcription)",
+        help="Run mode: daemon (service), oneshot (single), or continuous (dictation)",
     )
 
     parser.add_argument(
@@ -385,6 +473,12 @@ def main():
     )
 
     parser.add_argument(
+        "--continuous",
+        action="store_true",
+        help="Run in continuous dictation mode (equivalent to --mode continuous)",
+    )
+
+    parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         help="Override log level from config",
@@ -395,6 +489,8 @@ def main():
     # Determine mode
     if args.daemon:
         args.mode = "daemon"
+    elif args.continuous:
+        args.mode = "continuous"
 
     try:
         # Load configuration
@@ -426,6 +522,9 @@ def main():
         # Run service
         if args.mode == "daemon":
             asyncio.run(service.run_daemon())
+        elif args.mode == "continuous":
+            exit_code = asyncio.run(service.run_continuous())
+            sys.exit(exit_code)
         else:
             exit_code = asyncio.run(service.run_oneshot())
             sys.exit(exit_code)
