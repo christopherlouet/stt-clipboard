@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-cov lint format security clean run
+.PHONY: help install install-dev test test-cov lint format security security-audit clean run
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -31,6 +31,18 @@ security: ## Run security checks (bandit, safety, detect-secrets)
 	uv run bandit -c pyproject.toml -r src/
 	uv run safety scan --output screen || true
 	uv run detect-secrets scan --baseline .secrets.baseline
+
+security-audit: ## Run comprehensive security audit (pip-audit, bandit, safety)
+	@echo "=== Running pip-audit (dependency vulnerabilities) ==="
+	uv run pip-audit --desc on || true
+	@echo ""
+	@echo "=== Running bandit (code security) ==="
+	uv run bandit -c pyproject.toml -r src/
+	@echo ""
+	@echo "=== Running safety (dependency vulnerabilities) ==="
+	uv run safety scan --policy-file .safety-policy.yml || true
+	@echo ""
+	@echo "=== Security audit complete ==="
 
 pre-commit: ## Run all pre-commit hooks
 	uv run pre-commit run --all-files
