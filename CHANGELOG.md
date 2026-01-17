@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-01-17
+
+### Added
+- **Text User Interface (TUI)** with Textual framework
+  - Interactive terminal UI with status indicator, stats panel, and transcription log
+  - Keyboard bindings: R (Record), C (Continuous), S (Stop), H (History), Q (Quit)
+  - Real-time statistics display (requests, success rate, RTF)
+  - New `--tui` flag and `--mode tui` option
+  - Dependencies: textual>=3.0.0, rich>=13.0.0
+
+- **Continuous Dictation Mode**
+  - New `--mode continuous` for uninterrupted dictation sessions
+  - Automatic segment detection and transcription
+  - Each pause triggers clipboard copy
+  - `record_continuous()` and `stop_continuous()` methods in AudioRecorder
+
+- **Transcription History with Persistence**
+  - `TranscriptionHistory` class for storing transcription entries
+  - JSON file persistence with configurable location
+  - Maximum entries limit with automatic pruning
+  - Auto-save on each transcription
+  - History configuration in `config.yaml`
+
+- **Multi-Language Support**
+  - Added German (DE), Spanish (ES), and Italian (IT)
+  - `SupportedLanguage` enum for type-safe language handling
+  - Language-specific punctuation rules
+
+- **Startup System Tools Validation**
+  - `check_clipboard_tool()`: validates clipboard tool availability
+  - `check_paste_tool()`: validates paste tool availability
+  - `ValidationResult` dataclass for structured validation
+  - `Config.validate_system_tools()` method
+  - Cross-platform support (macOS pbcopy, Wayland wl-copy, X11 xclip/xsel)
+
+- **Streaming Transcription Support**
+  - Real-time transcription with word-level timestamps
+  - `transcribe_with_timestamps()` method
+  - Streaming callback support for live updates
+
+- **No-Speech-Detected Notification**
+  - Desktop notification when no speech is detected
+  - Includes timeout information for user feedback
+
+- **Clipboard Retry with Exponential Backoff**
+  - Automatic retry on clipboard failures
+  - Exponential backoff strategy with configurable parameters
+  - Improved reliability for clipboard operations
+
+- **Model Warmup at Startup**
+  - Pre-loads Whisper and VAD models on service start
+  - Reduces first transcription latency
+
+- **LRU Cache for VAD**
+  - Caches audio chunk VAD results
+  - Improves performance for repeated audio patterns
+
+- **Property-Based Testing**
+  - Hypothesis-based tests for punctuation module
+  - Tests for alphanumeric preservation, idempotence, and language rules
+
+### Changed
+- Test coverage increased to 518 tests (from 371)
+- Improved documentation with version badge
+
 ## [1.2.0] - 2026-01-16
 
 ### Added
@@ -125,7 +190,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/christopherlouet/stt-clipboard/compare/v0.1.0...v1.0.0
