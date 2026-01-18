@@ -72,23 +72,23 @@ stt-tui
 # Press hotkey → Speak → Pause → Text appears in clipboard
 ```
 
-## Text User Interface (TUI)
+## Text User Interface (TUI) - Bilingual FR/EN
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ STT Clipboard                                      [READY]      │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Transcription Log                                              │
-│  ─────────────────                                              │
-│  [14:30:45] Bonjour, comment allez-vous ?                      │
-│  [14:31:02] Hello, this is a test transcription.               │
-│                                                                 │
-├─────────────────────────────────────────────────────────────────┤
-│  [R]ecord  [C]ontinuous  [S]top  [H]istory  [O]ptions  [Q]uit  │
-├─────────────────────────────────────────────────────────────────┤
-│  Total: 2 | Success: 2 | Failed: 0 | Audio: 8.5s | RTF: 0.25   │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│ STT Clipboard                                        [READY]  │
+├───────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Transcription Log                                            │
+│  ─────────────────                                            │
+│  [14:30:45] Bonjour, comment allez-vous ?                     │
+│  [14:31:02] Hello, this is a test transcription.              │
+│                                                               │
+├───────────────────────────────────────────────────────────────┤
+│  [R]ecord  [C]ontinuous  [S]top  [H]istory  [O]ptions  [Q]uit │
+├───────────────────────────────────────────────────────────────┤
+│  Total: 2 | Success: 2 | Failed: 0 | Audio: 8.5s | RTF: 0.25  │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ### Keyboard Shortcuts
