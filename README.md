@@ -12,6 +12,38 @@
 
 Professional-grade, privacy-focused speech-to-text system with bilingual support (French/English) for Linux and macOS. Works on both Wayland and X11 on Linux, and uses native clipboard on macOS.
 
+## Quick Start
+
+```bash
+# 1. Install dependencies
+./scripts/install_deps.sh
+
+# 2. Install global commands (stt, stt-tui)
+./scripts/install_global.sh
+
+# 3. Launch the TUI
+stt-tui
+```
+
+> **Note**: If `stt-tui` is not found, add `~/.local/bin` to your PATH:
+> ```bash
+> echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+> ```
+
+## Global Commands
+
+After running `install_global.sh`, two commands are available system-wide:
+
+| Command | Description |
+|---------|-------------|
+| `stt-tui` | Launch the Text User Interface |
+| `stt --mode oneshot` | Single transcription to clipboard |
+| `stt --mode daemon` | Background service for hotkey triggers |
+| `stt --mode continuous` | Continuous dictation mode |
+| `stt --help` | Show all options |
+
+**Configuration location**: `~/.config/stt-clipboard/config.yaml`
+
 ## Features
 
 - **100% Offline**: All processing happens locally, zero network dependency
@@ -60,9 +92,9 @@ The installation script automatically detects your platform and uses the appropr
 | AlmaLinux | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
 | CentOS 7 | yum | ✅ Supported | xclip | xdotool |
 
-## Quick Start
+## Installation
 
-### 1. Install Dependencies
+### Step 1: Install Dependencies
 
 ```bash
 ./scripts/install_deps.sh
@@ -76,41 +108,40 @@ This will:
 - Install Python dependencies using uv
 - Download Whisper base model (~140MB)
 
-### 2. Test One-Shot Mode
-
-```bash
-uv run python -m src.main --mode oneshot
-```
-
-Speak into your microphone, pause for 1.2s, and the text should appear in your clipboard.
-
-### 3. Install Global Commands (Optional)
-
-Install `stt` and `stt-tui` commands to run from any directory:
+### Step 2: Install Global Commands
 
 ```bash
 ./scripts/install_global.sh
 ```
 
-After installation, add `~/.local/bin` to your PATH if not already:
+This will:
+- Install `stt` and `stt-tui` commands in `~/.local/bin`
+- Copy configuration to `~/.config/stt-clipboard/config.yaml`
+- Create data and log directories
+
+**Add to PATH** (if not already):
 
 ```bash
-# For bash:
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
+# Bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
 
-# For zsh:
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
+# Zsh
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
 ```
 
-Now you can run:
-- `stt-tui` - Launch the TUI interface
-- `stt --mode daemon` - Run in daemon mode
-- `stt --mode oneshot` - Single transcription
-- `stt --help` - Show all options
+### Step 3: Test
 
-### 4. Install Systemd Service
+```bash
+# Launch the TUI (recommended)
+stt-tui
+
+# Or test one-shot mode
+stt --mode oneshot
+```
+
+### Step 4: Install Systemd Service (Optional)
+
+For hotkey-triggered transcription:
 
 ```bash
 ./scripts/install_service.sh
@@ -118,7 +149,7 @@ Now you can run:
 
 This installs and enables the service to start automatically on login.
 
-### 5. Configure Keyboard Shortcut
+### Step 5: Configure Keyboard Shortcut
 
 #### Ubuntu GNOME:
 
@@ -145,7 +176,7 @@ This installs and enables the service to start automatically on login.
 
 **Note for macOS users**: Auto-paste requires **Accessibility permissions**. Go to **System Settings → Privacy & Security → Accessibility** and enable access for your terminal or the application running the script.
 
-### 6. Usage
+### Step 6: Usage (Hotkey Mode)
 
 1. Press your configured hotkey
 2. Speak (you'll see log output if running in terminal)
