@@ -1,16 +1,25 @@
 # STT Clipboard - Offline Speech-to-Text (French/English)
 
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/christopherlouet/stt-clipboard/releases/tag/v1.4.0)
 [![CI](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml/badge.svg)](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-MkDocs-blue.svg)](https://christopherlouet.github.io/stt-clipboard/)
 [![Coverage](https://img.shields.io/badge/coverage-86%25-brightgreen.svg)](https://github.com/christopherlouet/stt-clipboard)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
-[![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-Professional-grade, privacy-focused speech-to-text system with bilingual support (French/English) for Linux and macOS. Works on both Wayland and X11 on Linux, and uses native clipboard on macOS.
+Professional-grade, privacy-focused speech-to-text system with bilingual support (French/English) for Linux and macOS.
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Usage Examples](#usage-examples)
+- [Text User Interface](#text-user-interface-tui)
+- [Features](#features)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Documentation](#documentation)
 
 ## Quick Start
 
@@ -30,67 +39,108 @@ stt-tui
 > echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
 > ```
 
-## Global Commands
+## Usage Examples
 
-After running `install_global.sh`, two commands are available system-wide:
+### Quick Dictation (Email, Document)
 
-| Command | Description |
-|---------|-------------|
-| `stt-tui` | Launch the Text User Interface |
-| `stt --mode oneshot` | Single transcription to clipboard |
-| `stt --mode daemon` | Background service for hotkey triggers |
-| `stt --mode continuous` | Continuous dictation mode |
-| `stt --help` | Show all options |
+```bash
+# Single transcription → text copied to clipboard → paste with Ctrl+V
+stt --mode oneshot
+```
 
-**Configuration location**: `~/.config/stt-clipboard/config.yaml`
+### Continuous Note-Taking
+
+```bash
+# Continuous dictation - each pause transcribes and copies
+stt --mode continuous
+```
+
+### Interactive TUI
+
+```bash
+# Full interface with history, settings, and stats
+stt-tui
+```
+
+### Background Service (Hotkey Trigger)
+
+```bash
+# Install service for hotkey-triggered transcription
+./scripts/install_service.sh
+
+# Configure a hotkey to run: /path/to/scripts/trigger.sh
+# Press hotkey → Speak → Pause → Text appears in clipboard
+```
+
+## Text User Interface (TUI)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ STT Clipboard                                      [READY]      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Transcription Log                                              │
+│  ─────────────────                                              │
+│  [14:30:45] Bonjour, comment allez-vous ?                      │
+│  [14:31:02] Hello, this is a test transcription.               │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  [R]ecord  [C]ontinuous  [S]top  [H]istory  [O]ptions  [Q]uit  │
+├─────────────────────────────────────────────────────────────────┤
+│  Total: 2 | Success: 2 | Failed: 0 | Audio: 8.5s | RTF: 0.25   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Keyboard Shortcuts
+
+| Key | Action | Description |
+|-----|--------|-------------|
+| `R` | Record | Start single recording |
+| `C` | Continuous | Start continuous dictation |
+| `S` | Stop | Stop current recording |
+| `H` | History | View past transcriptions |
+| `O` | Options | Open settings editor |
+| `Q` | Quit | Exit application |
+
+### Settings Editor
+
+Press `O` to modify settings without editing YAML files:
+- **Audio**: Sample rate, silence duration, max recording length
+- **Transcription**: Model size, language, compute type
+- **Output**: Clipboard, auto-paste, punctuation rules
+- **System**: Logging level, history settings
+
+Settings requiring restart are marked with `[*]`.
 
 ## Features
 
 - **100% Offline**: All processing happens locally, zero network dependency
-- **Bilingual Support**: Automatic language detection for French and English with smart punctuation
+- **Bilingual Support**: Automatic French/English detection with smart punctuation
 - **Low Latency**: ~1-2s transcription time after speech ends
-- **Privacy First**: No data leaves your machine
-- **Universal Clipboard**: Works on both Wayland (wl-clipboard) and X11 (xclip)
-- **Text User Interface (TUI)**: Modern terminal interface with settings management
-- **Global Commands**: Install `stt` and `stt-tui` commands to run from anywhere
-- **Transcription History**: Track and review past transcriptions
-- **Auto-Start**: Systemd service starts on login
-- **Simple Workflow**: Press hotkey → Speak → Pause → Text in clipboard
+- **Privacy First**: Audio processed in-memory only, never saved
+- **Universal Clipboard**: Wayland (wl-copy), X11 (xclip), macOS (pbcopy)
+- **Text User Interface**: Modern terminal UI with settings management
+- **Global Commands**: `stt` and `stt-tui` available system-wide
+- **Transcription History**: Persistent storage with search
+- **Auto-Paste**: Optional automatic paste after transcription
 
-## Performance
+### Performance
 
-- **Transcription Time**: ~0.8-1.2s for 5s of audio
-- **Total Latency**: ~7-8s (includes 1.2s silence detection)
-- **Memory Usage**: ~500MB during transcription
-- **CPU**: Single core at 100% for ~1s during transcription
-- **Accuracy**: 5-8% WER (Word Error Rate) for clean French audio
-
-## Requirements
-
-- **Operating System** (auto-detected):
-  - **Linux**: Debian, Ubuntu, Arch Linux, Fedora, RHEL/CentOS/Rocky Linux/AlmaLinux
-  - **macOS**: macOS 12+ (Monterey or later)
-- Python 3.10+
-- Wayland or X11 session on Linux (auto-detected), native on macOS
-- Working microphone
-- ~2GB free disk space (models + dependencies)
+| Metric | Value |
+|--------|-------|
+| Transcription Time | ~0.8-1.2s for 5s audio |
+| Total Latency | ~7-8s (includes silence detection) |
+| Memory Usage | ~500MB during transcription |
+| Accuracy | 5-8% WER for clean audio |
 
 ### Supported Platforms
 
-The installation script automatically detects your platform and uses the appropriate package manager:
-
-| Platform | Package Manager | Status | Clipboard | Auto-Paste |
-|----------|-----------------|--------|-----------|------------|
-| **Ubuntu** | apt | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
-| **Debian** | apt | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
-| **Fedora** | dnf | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
-| **Arch Linux** | pacman | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
-| **macOS** | brew | ✅ Tested | pbcopy/pbpaste | osascript (Cmd+V) |
-| RHEL 8/9 | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
-| CentOS Stream | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
-| Rocky Linux | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
-| AlmaLinux | dnf | ✅ Supported | wl-copy/xclip | xdotool/ydotool |
-| CentOS 7 | yum | ✅ Supported | xclip | xdotool |
+| Platform | Status | Clipboard | Auto-Paste |
+|----------|--------|-----------|------------|
+| **Ubuntu/Debian** | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
+| **Fedora/RHEL** | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
+| **Arch Linux** | ✅ Tested | wl-copy/xclip | xdotool/ydotool |
+| **macOS 12+** | ✅ Tested | pbcopy | osascript |
 
 ## Installation
 
@@ -100,13 +150,7 @@ The installation script automatically detects your platform and uses the appropr
 ./scripts/install_deps.sh
 ```
 
-This will:
-- Auto-detect your platform (macOS, Debian/Ubuntu, Arch Linux, or RHEL/Fedora)
-- Install system packages (portaudio on macOS, libportaudio + wl-clipboard on Linux)
-- Auto-detect display server on Linux (Wayland/X11) and install clipboard tools
-- Install uv (fast Python package manager)
-- Install Python dependencies using uv
-- Download Whisper base model (~140MB)
+Auto-detects your platform and installs all required packages.
 
 ### Step 2: Install Global Commands
 
@@ -114,12 +158,9 @@ This will:
 ./scripts/install_global.sh
 ```
 
-This will:
-- Install `stt` and `stt-tui` commands in `~/.local/bin`
-- Copy configuration to `~/.config/stt-clipboard/config.yaml`
-- Create data and log directories
+Installs `stt` and `stt-tui` in `~/.local/bin` and copies config to `~/.config/stt-clipboard/`.
 
-**Add to PATH** (if not already):
+**Add to PATH** (if needed):
 
 ```bash
 # Bash
@@ -129,17 +170,13 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
 ```
 
-### Step 3: Test
+### Step 3: Verify Installation
 
 ```bash
-# Launch the TUI (recommended)
-stt-tui
-
-# Or test one-shot mode
-stt --mode oneshot
+stt-tui  # or: stt --mode oneshot
 ```
 
-### Step 4: Install Systemd Service (Optional)
+### Step 4: Systemd Service (Optional)
 
 For hotkey-triggered transcription:
 
@@ -147,586 +184,107 @@ For hotkey-triggered transcription:
 ./scripts/install_service.sh
 ```
 
-This installs and enables the service to start automatically on login.
-
-### Step 5: Configure Keyboard Shortcut
-
-#### Ubuntu GNOME:
-
-1. Open **Settings** → **Keyboard** → **Keyboard Shortcuts**
-2. Scroll to bottom and click **"+"** to add custom shortcut
-3. Set:
-   - **Name**: STT Dictation
-   - **Command**: `/path/to/stt-clipboard/scripts/trigger.sh`
-   - **Shortcut**: Press your desired key combo (e.g., **Super+Shift+S**)
-
-#### KDE Plasma:
-
-1. Open **System Settings** → **Shortcuts** → **Custom Shortcuts**
-2. Right-click → **New** → **Global Shortcut** → **Command/URL**
-3. Set command to: `/path/to/stt-clipboard/scripts/trigger.sh`
-4. Assign hotkey (e.g., **Meta+Shift+S**)
-
-#### macOS:
-
-1. Open **System Settings** → **Keyboard** → **Keyboard Shortcuts** → **Services**
-2. Or use a third-party tool like **BetterTouchTool**, **Karabiner-Elements**, or **Hammerspoon**
-3. Set command to: `/path/to/stt-clipboard/scripts/trigger.sh`
-4. Assign hotkey (e.g., **Ctrl+Option+S**)
-
-**Note for macOS users**: Auto-paste requires **Accessibility permissions**. Go to **System Settings → Privacy & Security → Accessibility** and enable access for your terminal or the application running the script.
-
-### Step 6: Usage (Hotkey Mode)
-
-1. Press your configured hotkey
-2. Speak (you'll see log output if running in terminal)
-3. Pause for 1.2 seconds
-4. Text is automatically copied to clipboard
-5. Paste anywhere with **Ctrl+V** (editors) or **Ctrl+Shift+V** (terminals)
-
-## Text User Interface (TUI)
-
-STT Clipboard includes a modern terminal-based interface for easy operation and configuration.
-
-### Launch TUI
-
-```bash
-# From the project directory
-uv run python -m src.main --tui
-# or
-make tui
-
-# After global installation
-stt-tui
-```
-
-### TUI Features
-
-- **Recording Controls**: Press `R` to record, `S` to stop, `C` for continuous mode
-- **Transcription History**: Press `H` to view past transcriptions
-- **Settings Editor**: Press `O` to open settings with hot-reload support
-- **Real-time Stats**: View transcription count, success rate, and performance
-
-### Keyboard Shortcuts
-
-| Key | Action |
-|-----|--------|
-| `R` | Start recording |
-| `C` | Start continuous mode |
-| `S` | Stop recording |
-| `H` | View history |
-| `O` | Open settings |
-| `Q` | Quit |
-
-### Settings Editor
-
-The TUI settings editor allows you to modify configuration without editing YAML files:
-
-- **Audio Settings**: Sample rate, channels, silence duration
-- **Transcription**: Model size, language, compute type
-- **Output**: Clipboard, auto-paste, punctuation
-- **System**: Logging level, history settings
-
-Settings that require a restart are clearly marked with `[*]`.
-
-## Auto-Paste Mode (Optional)
-
-In addition to copying text to clipboard, STT Clipboard can automatically paste transcribed text into the active application.
-
-### Setup Auto-Paste
-
-1. **Install paste tools** (already included in `install_deps.sh`):
-   - **X11**: xdotool (automatically installed)
-   - **Wayland**: ydotool (requires enabling daemon)
-
-2. **Enable ydotool daemon** (Wayland only):
-   ```bash
-   sudo systemctl enable --now ydotool
-   ```
-
-3. **Configure keyboard shortcuts**:
-
-   **For standard applications (Ctrl+V paste):**
-   - **Name**: STT Dictation (Auto-Paste)
-   - **Command**: `/path/to/scripts/trigger_paste.sh`
-   - **Shortcut**: e.g., **Super+Shift+V**
-
-   **For terminals (Ctrl+Shift+V paste):**
-   - **Name**: STT Dictation (Terminal)
-   - **Command**: `/path/to/scripts/trigger_paste_terminal.sh`
-   - **Shortcut**: e.g., **Super+Shift+T**
-
-### Usage Modes
-
-STT Clipboard supports three trigger modes:
-
-- **Copy Only** (e.g., Super+Shift+S): Text copied to clipboard, manual paste with Ctrl+V
-- **Copy + Auto-Paste** (e.g., Super+Shift+V): Text automatically pasted with Ctrl+V (for standard applications)
-- **Copy + Terminal Paste** (e.g., Super+Shift+T): Text automatically pasted with Ctrl+Shift+V (for terminal applications)
-
-### Configuration
-
-Edit `config/config.yaml`:
-
-```yaml
-paste:
-  enabled: true          # Enable/disable auto-paste
-  timeout: 2.0          # Paste operation timeout
-  delay_ms: 100         # Delay between copy and paste
-  preferred_tool: auto  # "auto", "osascript", "xdotool", "ydotool", "wtype"
-```
-
-After changes: `systemctl --user restart stt-clipboard`
+Then configure a keyboard shortcut to run `/path/to/scripts/trigger.sh`.
 
 ## Configuration
 
-Edit `config/config.yaml` to customize:
+**Location**: `~/.config/stt-clipboard/config.yaml` (or `config/config.yaml` locally)
+
+### Key Settings
 
 ```yaml
 audio:
-  silence_duration: 1.2        # Silence threshold to stop recording
-  max_recording_duration: 30   # Maximum recording length
+  silence_duration: 1.2    # Seconds of silence to stop recording
+  max_recording_duration: 30
 
 transcription:
-  model_size: base             # tiny (fast) or base (more accurate)
-  language: ""                 # "" = auto-detect FR/EN, "fr" = French only, "en" = English only
+  model_size: base         # tiny, base, small, medium
+  language: ""             # "" = auto-detect, "fr", "en"
 
-punctuation:
-  french_spacing: true         # Auto-apply French spacing when French is detected
+paste:
+  enabled: false           # Auto-paste after transcription
+  preferred_tool: auto     # auto, xdotool, ydotool, wtype, osascript
 ```
 
-After changing config, restart the service:
-```bash
-systemctl --user restart stt-clipboard
-```
+After changes: `systemctl --user restart stt-clipboard` (if using service)
 
-## Service Management
-
-### Start/Stop Service
-
-```bash
-# Start
-systemctl --user start stt-clipboard
-
-# Stop
-systemctl --user stop stt-clipboard
-
-# Restart
-systemctl --user restart stt-clipboard
-
-# Status
-systemctl --user status stt-clipboard
-```
-
-### View Logs
-
-```bash
-# Real-time logs
-journalctl --user -u stt-clipboard -f
-
-# Recent logs
-journalctl --user -u stt-clipboard -n 50
-
-# File logs
-tail -f logs/stt-clipboard.log
-```
-
-### Disable Auto-Start
-
-```bash
-systemctl --user disable stt-clipboard
-```
-
-## Benchmarking
-
-Test transcription performance:
-
-```bash
-uv run ./scripts/benchmark.py --iterations 10
-```
-
-Expected results (Intel i5/Ryzen 5 or better):
-- **RTF** (Real-Time Factor): 0.2-0.3x (transcription faster than real-time)
-- **Mean time**: ~0.8-1.2s for 5s audio
+For detailed configuration options, see the [full documentation](https://christopherlouet.github.io/stt-clipboard/getting-started/configuration/).
 
 ## Troubleshooting
 
-### Service won't start
+### Common Issues
 
-```bash
-# Check status
-systemctl --user status stt-clipboard
+| Problem | Solution |
+|---------|----------|
+| `stt-tui` not found | Add `~/.local/bin` to PATH |
+| Service won't start | Check logs: `journalctl --user -u stt-clipboard -n 50` |
+| No audio input | Test: `uv run python -m src.audio_capture` |
+| Clipboard fails | Check session: `echo $XDG_SESSION_TYPE` |
 
-# Check logs
-journalctl --user -u stt-clipboard -n 50
-
-# Common issues:
-# 1. Dependencies not installed: run ./scripts/install_deps.sh
-# 2. uv not found: script will auto-install it
-# 3. Permissions: ensure scripts are executable (chmod +x scripts/*.sh)
-# 4. RHEL/CentOS: Ensure Python 3.10+ is installed (may need EPEL or python39)
-```
-
-### Hotkey doesn't work
+### Quick Diagnostics
 
 ```bash
 # Test trigger manually
 ./scripts/trigger.sh
 
-# If "Socket not found":
-systemctl --user start stt-clipboard
+# Check service status
+systemctl --user status stt-clipboard
 
-# If "Failed to send trigger":
-# Check logs: journalctl --user -u stt-clipboard -f
+# View logs
+journalctl --user -u stt-clipboard -f
 ```
 
-### No microphone input
-
-```bash
-# List available devices
-uv run python -c "import sounddevice as sd; print(sd.query_devices())"
-
-# Test recording
-uv run python -m src.audio_capture
-```
-
-### Transcription is slow
-
-1. Check CPU usage during transcription:
-   ```bash
-   htop
-   ```
-
-2. Try disabling other CPU-intensive apps
-
-3. Consider using `base` model instead of `tiny`:
-   ```yaml
-   # In config/config.yaml
-   transcription:
-     model_size: base  # More accurate, ~1.5s transcription
-   ```
-
-### Poor transcription accuracy
-
-1. **Check microphone quality**: Test with voice recorder app
-2. **Reduce background noise**: Use in quiet environment
-3. **Speak clearly**: Natural pace, not too fast
-4. **Try base model**: Edit `config/config.yaml`, set `model_size: base`
-5. **Adjust VAD threshold**: In config, increase `vad.threshold` to 0.6 or 0.7
-
-### Clipboard not working
-
-```bash
-# Check your session type
-echo $XDG_SESSION_TYPE
-# Output: wayland or x11
-
-# For Wayland - test wl-clipboard
-echo "test" | wl-copy && wl-paste
-# If not working:
-#   Debian/Ubuntu: sudo apt install wl-clipboard
-#   RHEL/Fedora:   sudo dnf install wl-clipboard
-
-# For X11 - test xclip
-echo "test" | xclip -selection clipboard && xclip -selection clipboard -o
-# If not working:
-#   Debian/Ubuntu: sudo apt install xclip
-#   RHEL/Fedora:   sudo dnf install xclip
-
-# The install script auto-detects and installs the correct tools
-```
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    User Presses Hotkey                  │
-└─────────────────────┬───────────────────────────────────┘
-                      ↓
-┌─────────────────────────────────────────────────────────┐
-│  trigger.sh / trigger_paste.sh / trigger_paste_terminal.sh │
-│  → Unix Socket → TriggerServer (hotkey.py)              │
-└─────────────────────┬───────────────────────────────────┘
-                      ↓
-┌─────────────────────────────────────────────────────────┐
-│          STTService.process_request() (main.py)         │
-└─────────────────────┬───────────────────────────────────┘
-                      ↓
-┌─────────────────────────────────────────────────────────┐
-│  Step 1: AudioRecorder records until silence (1.2s)    │
-│          - sounddevice captures audio                   │
-│          - silero-vad detects speech/silence            │
-│          (audio_capture.py)                             │
-└─────────────────────┬───────────────────────────────────┘
-                      ↓
-┌─────────────────────────────────────────────────────────┐
-│  Step 2: WhisperTranscriber transcribes audio           │
-│          - faster-whisper (CTranslate2)                 │
-│          - Optimized for CPU, French/English            │
-│          (transcription.py)                             │
-└─────────────────────┬───────────────────────────────────┘
-                      ↓
-┌─────────────────────────────────────────────────────────┐
-│  Step 3: PunctuationProcessor post-processes            │
-│          - Language-aware typography (FR/EN)            │
-│          - Capitalize sentences                         │
-│          (punctuation.py)                               │
-└─────────────────────┬───────────────────────────────────┘
-                      ↓
-┌─────────────────────────────────────────────────────────┐
-│  Step 4: ClipboardManager copies to clipboard           │
-│          - wl-copy integration                          │
-│          (clipboard.py)                                 │
-└─────────────────────┬───────────────────────────────────┘
-                      ↓
-┌─────────────────────────────────────────────────────────┐
-│  Step 5 (Optional): Auto-paste                          │
-│          - Ctrl+V for standard apps (trigger_paste.sh)  │
-│          - Ctrl+Shift+V for terminals (trigger_paste_terminal.sh) │
-│          (autopaste.py)                                 │
-└─────────────────────┬───────────────────────────────────┘
-                      ↓
-┌─────────────────────────────────────────────────────────┐
-│              Text appears in application                │
-└─────────────────────────────────────────────────────────┘
-```
-
-## File Structure
-
-```
-stt-clipboard/
-├── src/
-│   ├── main.py              # Service orchestration + CLI entry points
-│   ├── tui.py               # Text User Interface (Textual)
-│   ├── tui_settings.py      # TUI settings screen
-│   ├── tui_widgets/         # TUI widget components
-│   ├── audio_capture.py     # Audio recording + VAD
-│   ├── transcription.py     # Whisper transcription
-│   ├── punctuation.py       # Language-aware post-processing
-│   ├── clipboard.py         # Wayland/X11 clipboard
-│   ├── autopaste.py         # Auto-paste (Ctrl+V / Ctrl+Shift+V)
-│   ├── hotkey.py            # Trigger server
-│   ├── history.py           # Transcription history management
-│   └── config.py            # Configuration management
-├── config/
-│   └── config.yaml          # User configuration
-├── scripts/
-│   ├── install_deps.sh      # Dependency installation
-│   ├── install_service.sh   # Service installation
-│   ├── install_global.sh    # Global command installation (stt, stt-tui)
-│   ├── trigger.sh           # Copy-only mode trigger
-│   ├── trigger_paste.sh     # Auto-paste mode trigger (Ctrl+V)
-│   ├── trigger_paste_terminal.sh # Terminal paste trigger (Ctrl+Shift+V)
-│   └── benchmark.py         # Performance testing
-├── systemd/
-│   └── stt-clipboard.service # Systemd service file
-├── models/                  # Whisper models (auto-downloaded)
-├── logs/                    # Application logs
-├── data/                    # Transcription history
-├── pyproject.toml           # Python dependencies and project config
-└── README.md                # This file
-```
-
-## Advanced Usage
-
-### Change Model
-
-For better accuracy (at cost of speed):
-
-```yaml
-# config/config.yaml
-transcription:
-  model_size: base  # or small, medium
-```
-
-Restart service: `systemctl --user restart stt-clipboard`
-
-### Language Configuration
-
-By default, the system auto-detects French and English:
-
-```yaml
-transcription:
-  language: ""  # Auto-detect (default)
-```
-
-For single language (slightly faster):
-
-```yaml
-transcription:
-  language: "fr"  # French only
-  # or
-  language: "en"  # English only
-```
-
-Notes:
-- Auto-detection adds ~100-200ms latency but applies correct punctuation rules
-- French text gets French spacing (space before ? ! : ;)
-- English text gets English spacing (no space before punctuation)
-
-### Adjust Silence Detection
-
-Make it stop sooner or later:
-
-```yaml
-audio:
-  silence_duration: 1.0  # Stop after 1.0s silence (faster)
-  # or
-  silence_duration: 2.0  # Wait 2.0s (for longer pauses)
-```
-
-### Custom Socket Path
-
-```yaml
-hotkey:
-  socket_path: /tmp/my-custom-stt.sock
-```
-
-Update trigger.sh accordingly.
+For detailed troubleshooting, see the [documentation](https://christopherlouet.github.io/stt-clipboard/user-guide/troubleshooting/).
 
 ## Development
 
-### Setup Development Environment
+### Quick Setup
 
 ```bash
-./scripts/setup_dev.sh
+./scripts/setup_dev.sh   # Install dev dependencies + pre-commit hooks
+make test                 # Run tests
+make lint                 # Run linters
+make tui                  # Launch TUI
 ```
 
-This will:
-- Install development dependencies (pytest, linters, security tools)
-- Set up pre-commit hooks (formatting, linting, security checks)
-- Run initial validation
-
-### Pre-commit Hooks
-
-Pre-commit hooks run automatically on every commit and include:
-- **Code formatting** (black, isort, ruff)
-- **Type checking** (mypy)
-- **Security scanning** (bandit, detect-secrets, gitleaks, safety)
-- **Linting** (ruff, yamllint, shellcheck)
-- **Tests** (pytest - runs on push)
-
-Run manually:
-```bash
-# Run all hooks
-uv run pre-commit run --all-files
-
-# Run specific tools
-uv run black .              # Format code
-uv run ruff check .         # Lint code
-uv run mypy src/            # Type check
-uv run bandit -r src/       # Security scan
-```
-
-### Running Tests
+### Makefile Commands
 
 ```bash
-# Test individual modules
-uv run python -m src.audio_capture    # Test recording
-uv run python -m src.transcription    # Test transcription
-uv run python -m src.clipboard        # Test clipboard
-uv run python -m src.punctuation      # Test punctuation
-
-# Test trigger system
-uv run python -m src.hotkey           # In one terminal
-uv run python -m src.hotkey client    # In another terminal
-
-# Run pytest
-uv run pytest
-
-# Run with coverage
-uv run pytest --cov=src --cov-report=html
+make help           # Show all commands
+make install-dev    # Setup dev environment
+make install-global # Install stt/stt-tui globally
+make test-cov       # Tests with coverage
+make format         # Format code (black, isort)
+make security       # Security scans (bandit, safety)
 ```
 
-### Manual Testing
-
-```bash
-# One-shot mode (no service)
-uv run python -m src.main --mode oneshot
-
-# Daemon mode with debug logging
-uv run python -m src.main --daemon --log-level DEBUG
-```
-
-### Quick Development Commands
-
-Using the Makefile:
-```bash
-make help           # Show all available commands
-make install-dev    # Setup development environment
-make install-global # Install stt/stt-tui commands globally
-make test           # Run tests
-make test-cov       # Run tests with coverage
-make lint           # Run linters
-make format         # Format code
-make security       # Run security checks
-make pre-commit     # Run all pre-commit hooks
-make tui            # Launch TUI interface
-make clean          # Clean build artifacts
-```
-
-### Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guidelines.
-
-## Performance Tuning
-
-### CPU Governor
-
-For consistent performance:
-
-```bash
-sudo cpupower frequency-set -g performance
-```
-
-### Model Selection
-
-| Model  | Size  | Speed (5s audio) | Accuracy | Use Case |
-|--------|-------|------------------|----------|----------|
-| tiny   | 75MB  | ~0.8-1.2s       | Good     | Daily use (recommended) |
-| base   | 140MB | ~1.5-2.0s       | Better   | Important transcriptions |
-| small  | 460MB | ~3-4s           | Excellent| Critical documents |
-
-## Privacy & Security
-
-- **No Network**: All processing happens locally
-- **No Logging of Audio**: Audio is processed in-memory only
-- **No Cloud Services**: Zero external dependencies
-- **Open Source**: Inspect all code in this repository
-- **Logs**: Only contain metadata (duration, performance), never audio or text content
-- **Security Scanning**: Automated checks for vulnerabilities and secrets via pre-commit hooks
-
-## License
-
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
-## Credits
-
-Built with:
-- [faster-whisper](https://github.com/guillaumekln/faster-whisper) - Fast Whisper inference
-- [OpenAI Whisper](https://github.com/openai/whisper) - Speech recognition model
-- [Silero VAD](https://github.com/snakers4/silero-vad) - Voice activity detection
-- [sounddevice](https://python-sounddevice.readthedocs.io/) - Audio I/O
-- [Textual](https://github.com/Textualize/textual) - Terminal User Interface
-- [wl-clipboard](https://github.com/bugaevc/wl-clipboard) - Wayland clipboard
-- [xclip](https://github.com/astrand/xclip) - X11 clipboard
+For contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Documentation
 
-**Full documentation:** [https://christopherlouet.github.io/stt-clipboard/](https://christopherlouet.github.io/stt-clipboard/)
+**Full documentation**: [https://christopherlouet.github.io/stt-clipboard/](https://christopherlouet.github.io/stt-clipboard/)
 
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Development and contribution guidelines
-- [SECURITY.md](SECURITY.md) - Security policy and reporting
-- [docs/](docs/) - Additional documentation
-  - [Security Scan Results](docs/SECURITY_SCAN_RESULTS.md)
-  - [Dependency Vulnerabilities](docs/DEPENDENCY_VULNERABILITIES.md)
+- [Installation Guide](https://christopherlouet.github.io/stt-clipboard/getting-started/installation/)
+- [TUI Guide](https://christopherlouet.github.io/stt-clipboard/user-guide/tui/)
+- [Configuration](https://christopherlouet.github.io/stt-clipboard/getting-started/configuration/)
+- [Auto-Paste Setup](https://christopherlouet.github.io/stt-clipboard/user-guide/auto-paste/)
+- [Architecture](https://christopherlouet.github.io/stt-clipboard/architecture/overview/)
 
-## Support
+## Privacy & Security
 
-For issues, questions, or contributions, please open an issue on GitHub.
+- **100% Offline**: No network after initial model download
+- **No Audio Storage**: Processed in-memory only
+- **Open Source**: Full code inspection available
+- **Security Scanning**: Automated via pre-commit hooks
+
+## Credits
+
+Built with [faster-whisper](https://github.com/guillaumekln/faster-whisper), [Silero VAD](https://github.com/snakers4/silero-vad), [Textual](https://github.com/Textualize/textual), and [sounddevice](https://python-sounddevice.readthedocs.io/).
+
+## License
+
+[GNU General Public License v3.0](LICENSE)
 
 ---
 
-**Made with ❤️ for the privacy-conscious bilingual community**
-
-Works on macOS, Debian, Ubuntu, Arch Linux, Fedora, RHEL, CentOS, Rocky Linux, and AlmaLinux.
+**Made with care for the privacy-conscious bilingual community**
