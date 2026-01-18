@@ -68,6 +68,7 @@ nav:
       - Configuration: getting-started/configuration.md
   - User Guide:
       - Basic Usage: user-guide/basic-usage.md
+      - Text User Interface: user-guide/tui.md
       - Auto-Paste: user-guide/auto-paste.md
       - Service Management: user-guide/service-management.md
       - Troubleshooting: user-guide/troubleshooting.md

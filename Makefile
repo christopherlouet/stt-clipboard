@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-cov lint format security clean run
+.PHONY: help install install-dev install-global test test-cov lint format security clean run tui
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -11,6 +11,9 @@ install: ## Install production dependencies
 
 install-dev: ## Install development dependencies and setup pre-commit hooks
 	./scripts/setup_dev.sh
+
+install-global: ## Install commands globally (stt, stt-tui)
+	./scripts/install_global.sh
 
 test: ## Run tests
 	uv run pytest
@@ -51,6 +54,9 @@ run: ## Run in one-shot mode
 
 run-daemon: ## Run in daemon mode
 	uv run python -m src.main --daemon
+
+tui: ## Run TUI interface
+	uv run python -m src.main --tui
 
 benchmark: ## Run performance benchmark
 	uv run ./scripts/benchmark.py --iterations 10

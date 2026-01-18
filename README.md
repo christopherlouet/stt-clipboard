@@ -19,6 +19,9 @@ Professional-grade, privacy-focused speech-to-text system with bilingual support
 - **Low Latency**: ~1-2s transcription time after speech ends
 - **Privacy First**: No data leaves your machine
 - **Universal Clipboard**: Works on both Wayland (wl-clipboard) and X11 (xclip)
+- **Text User Interface (TUI)**: Modern terminal interface with settings management
+- **Global Commands**: Install `stt` and `stt-tui` commands to run from anywhere
+- **Transcription History**: Track and review past transcriptions
 - **Auto-Start**: Systemd service starts on login
 - **Simple Workflow**: Press hotkey → Speak → Pause → Text in clipboard
 
@@ -81,7 +84,33 @@ uv run python -m src.main --mode oneshot
 
 Speak into your microphone, pause for 1.2s, and the text should appear in your clipboard.
 
-### 3. Install Systemd Service
+### 3. Install Global Commands (Optional)
+
+Install `stt` and `stt-tui` commands to run from any directory:
+
+```bash
+./scripts/install_global.sh
+```
+
+After installation, add `~/.local/bin` to your PATH if not already:
+
+```bash
+# For bash:
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# For zsh:
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+Now you can run:
+- `stt-tui` - Launch the TUI interface
+- `stt --mode daemon` - Run in daemon mode
+- `stt --mode oneshot` - Single transcription
+- `stt --help` - Show all options
+
+### 4. Install Systemd Service
 
 ```bash
 ./scripts/install_service.sh
@@ -89,7 +118,7 @@ Speak into your microphone, pause for 1.2s, and the text should appear in your c
 
 This installs and enables the service to start automatically on login.
 
-### 4. Configure Keyboard Shortcut
+### 5. Configure Keyboard Shortcut
 
 #### Ubuntu GNOME:
 
@@ -116,13 +145,58 @@ This installs and enables the service to start automatically on login.
 
 **Note for macOS users**: Auto-paste requires **Accessibility permissions**. Go to **System Settings → Privacy & Security → Accessibility** and enable access for your terminal or the application running the script.
 
-### 5. Usage
+### 6. Usage
 
 1. Press your configured hotkey
 2. Speak (you'll see log output if running in terminal)
 3. Pause for 1.2 seconds
 4. Text is automatically copied to clipboard
 5. Paste anywhere with **Ctrl+V** (editors) or **Ctrl+Shift+V** (terminals)
+
+## Text User Interface (TUI)
+
+STT Clipboard includes a modern terminal-based interface for easy operation and configuration.
+
+### Launch TUI
+
+```bash
+# From the project directory
+uv run python -m src.main --tui
+# or
+make tui
+
+# After global installation
+stt-tui
+```
+
+### TUI Features
+
+- **Recording Controls**: Press `R` to record, `S` to stop, `C` for continuous mode
+- **Transcription History**: Press `H` to view past transcriptions
+- **Settings Editor**: Press `O` to open settings with hot-reload support
+- **Real-time Stats**: View transcription count, success rate, and performance
+
+### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `R` | Start recording |
+| `C` | Start continuous mode |
+| `S` | Stop recording |
+| `H` | View history |
+| `O` | Open settings |
+| `Q` | Quit |
+
+### Settings Editor
+
+The TUI settings editor allows you to modify configuration without editing YAML files:
+
+- **Audio Settings**: Sample rate, channels, silence duration
+- **Transcription**: Model size, language, compute type
+- **Output**: Clipboard, auto-paste, punctuation
+- **System**: Logging level, history settings
+
+Settings that require a restart are clearly marked with `[*]`.
 
 ## Auto-Paste Mode (Optional)
 
@@ -391,19 +465,24 @@ echo "test" | xclip -selection clipboard && xclip -selection clipboard -o
 ```
 stt-clipboard/
 ├── src/
-│   ├── main.py              # Service orchestration
+│   ├── main.py              # Service orchestration + CLI entry points
+│   ├── tui.py               # Text User Interface (Textual)
+│   ├── tui_settings.py      # TUI settings screen
+│   ├── tui_widgets/         # TUI widget components
 │   ├── audio_capture.py     # Audio recording + VAD
 │   ├── transcription.py     # Whisper transcription
 │   ├── punctuation.py       # Language-aware post-processing
 │   ├── clipboard.py         # Wayland/X11 clipboard
 │   ├── autopaste.py         # Auto-paste (Ctrl+V / Ctrl+Shift+V)
 │   ├── hotkey.py            # Trigger server
+│   ├── history.py           # Transcription history management
 │   └── config.py            # Configuration management
 ├── config/
 │   └── config.yaml          # User configuration
 ├── scripts/
 │   ├── install_deps.sh      # Dependency installation
 │   ├── install_service.sh   # Service installation
+│   ├── install_global.sh    # Global command installation (stt, stt-tui)
 │   ├── trigger.sh           # Copy-only mode trigger
 │   ├── trigger_paste.sh     # Auto-paste mode trigger (Ctrl+V)
 │   ├── trigger_paste_terminal.sh # Terminal paste trigger (Ctrl+Shift+V)
@@ -412,6 +491,7 @@ stt-clipboard/
 │   └── stt-clipboard.service # Systemd service file
 ├── models/                  # Whisper models (auto-downloaded)
 ├── logs/                    # Application logs
+├── data/                    # Transcription history
 ├── pyproject.toml           # Python dependencies and project config
 └── README.md                # This file
 ```
@@ -543,12 +623,14 @@ Using the Makefile:
 ```bash
 make help           # Show all available commands
 make install-dev    # Setup development environment
+make install-global # Install stt/stt-tui commands globally
 make test           # Run tests
 make test-cov       # Run tests with coverage
 make lint           # Run linters
 make format         # Format code
 make security       # Run security checks
 make pre-commit     # Run all pre-commit hooks
+make tui            # Launch TUI interface
 make clean          # Clean build artifacts
 ```
 
@@ -594,6 +676,7 @@ Built with:
 - [OpenAI Whisper](https://github.com/openai/whisper) - Speech recognition model
 - [Silero VAD](https://github.com/snakers4/silero-vad) - Voice activity detection
 - [sounddevice](https://python-sounddevice.readthedocs.io/) - Audio I/O
+- [Textual](https://github.com/Textualize/textual) - Terminal User Interface
 - [wl-clipboard](https://github.com/bugaevc/wl-clipboard) - Wayland clipboard
 - [xclip](https://github.com/astrand/xclip) - X11 clipboard
 

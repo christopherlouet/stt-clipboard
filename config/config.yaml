@@ -49,6 +49,13 @@ logging:
   file: ./logs/stt-clipboard.log  # Log file path
   format: "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan> - {message}"
 
+# History settings
+history:
+  enabled: true                # Enable transcription history
+  file: ./data/history.json    # History file path
+  max_entries: 100             # Maximum entries to keep
+  auto_save: true              # Auto-save after each transcription
+
 # Hotkey/trigger settings
 hotkey:
   enabled: false               # Enable evdev hotkey (not needed with desktop keybind)

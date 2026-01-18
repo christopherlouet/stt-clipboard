@@ -6,7 +6,32 @@
 ./scripts/install_deps.sh
 ```
 
-## 2. Test One-Shot Mode
+## 2. Launch the TUI (Recommended)
+
+The easiest way to use STT Clipboard is through the Text User Interface:
+
+```bash
+make tui
+```
+
+Or after [global installation](installation.md#global-installation):
+
+```bash
+stt-tui
+```
+
+The TUI provides:
+
+- Visual recording status and controls
+- Transcription history with search
+- Settings editor with hot-reload
+- Performance statistics
+
+See the [TUI Guide](../user-guide/tui.md) for details.
+
+## 3. Test One-Shot Mode (Alternative)
+
+For command-line testing:
 
 ```bash
 uv run python -m src.main --mode oneshot
@@ -14,7 +39,7 @@ uv run python -m src.main --mode oneshot
 
 Speak into your microphone, pause for 1.2 seconds, and the text will appear in your clipboard.
 
-## 3. Install as Service
+## 4. Install as Service (For Hotkey Trigger)
 
 ```bash
 ./scripts/install_service.sh
@@ -22,7 +47,7 @@ Speak into your microphone, pause for 1.2 seconds, and the text will appear in y
 
 This installs and enables the service to start automatically on login.
 
-## 4. Configure Keyboard Shortcut
+## 5. Configure Keyboard Shortcut
 
 ### Ubuntu GNOME
 
@@ -46,7 +71,7 @@ This installs and enables the service to start automatically on login.
 2. Set command to: `/path/to/stt-clipboard/scripts/trigger.sh`
 3. Assign hotkey: e.g., ++ctrl+option+s++
 
-## 5. Usage
+## 6. Usage (Hotkey Mode)
 
 1. Press your configured hotkey
 2. Speak (you'll see a notification)
@@ -64,6 +89,7 @@ This installs and enables the service to start automatically on login.
 
 ## Next Steps
 
+- [Text User Interface](../user-guide/tui.md)
 - [Configuration Guide](configuration.md)
 - [Auto-Paste Setup](../user-guide/auto-paste.md)
 - [Troubleshooting](../user-guide/troubleshooting.md)

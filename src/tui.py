@@ -2,6 +2,7 @@
 
 from datetime import datetime
 
+from loguru import logger
 from rich.text import Text
 from textual import events, work
 from textual.app import App, ComposeResult
@@ -674,6 +675,24 @@ def run_tui(config: Config, config_path: str = "config/config.yaml") -> None:
         config: Application configuration
         config_path: Path to configuration file
     """
+    # Disable console logging to prevent interference with TUI
+    # Remove all handlers that output to stderr/stdout
+    logger.remove()
+
+    # Optionally keep file logging if configured
+    if config.logging.file:
+        from pathlib import Path
+
+        log_file = Path(config.logging.file)
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        logger.add(
+            config.logging.file,
+            format=config.logging.format,
+            level=config.logging.level,
+            rotation="10 MB",
+            retention="7 days",
+        )
+
     app = STTApp(config, config_path)
     app.run()
 

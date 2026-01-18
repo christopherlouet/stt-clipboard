@@ -98,7 +98,61 @@ print('All imports successful!')
 uv run python -m src.main --mode oneshot
 ```
 
+## Global Installation
+
+Install `stt` and `stt-tui` commands for system-wide access:
+
+```bash
+./scripts/install_global.sh
+```
+
+This will:
+
+1. Install the package in editable mode with uv
+2. Create symlinks in `~/.local/bin`
+3. Copy default config to `~/.config/stt-clipboard/`
+4. Create logs and data directories
+
+After installation, you can run from anywhere:
+
+```bash
+stt-tui              # Launch TUI interface
+stt --mode daemon    # Run in daemon mode
+stt --mode oneshot   # Single transcription
+stt --help           # Show all options
+```
+
+!!! note "PATH Configuration"
+    If commands are not found, add `~/.local/bin` to your PATH:
+
+    === "Bash"
+        ```bash
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+        source ~/.bashrc
+        ```
+
+    === "Zsh"
+        ```bash
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+        source ~/.zshrc
+        ```
+
+### Configuration Location
+
+For global installation, config is searched in this order:
+
+1. `STT_CONFIG` environment variable
+2. `./config/config.yaml` (current directory)
+3. `~/.config/stt-clipboard/config.yaml` (user config)
+
+Override with environment variable:
+
+```bash
+STT_CONFIG=/path/to/config.yaml stt-tui
+```
+
 ## Next Steps
 
 - [Quick Start Guide](quickstart.md)
 - [Configuration](configuration.md)
+- [Text User Interface](../user-guide/tui.md)

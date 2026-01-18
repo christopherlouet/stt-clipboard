@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Global Installation** (`scripts/install_global.sh`)
+  - Install `stt` and `stt-tui` commands system-wide
+  - Symlinks in `~/.local/bin` pointing to `.venv/bin`
+  - Auto-copy config to `~/.config/stt-clipboard/`
+  - Config path resolution: env var > local > user config
+  - Support for both bash and zsh PATH instructions
+
+- **TUI Settings Editor** with hot-reload
+  - Tabbed interface: Audio, Transcription, Output, System
+  - Live validation with error messages
+  - Settings requiring restart marked with `[*]`
+  - Keyboard shortcuts: Ctrl+S (save), Escape (cancel), Ctrl+R (reset)
+  - Confirmation dialog for unsaved changes
+  - Restart warning dialog for system settings
+
+- **TUI Modal Dialogs** (`src/tui_widgets/`)
+  - `ConfirmDialog`: Generic confirmation with customizable buttons
+  - `RestartWarningDialog`: Lists settings requiring restart
+
+### Fixed
+- TUI console logging no longer interferes with interface display
+- Modal dialog buttons now properly visible (explicit height CSS)
+
 ## [1.3.0] - 2026-01-17
 
 ### Added

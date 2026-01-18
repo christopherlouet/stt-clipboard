@@ -16,6 +16,9 @@
 - **Privacy First**: No data leaves your machine
 - **Universal Clipboard**: Works on Wayland, X11, and macOS
 - **Auto-Paste**: Automatically paste transcribed text (optional)
+- **Text User Interface**: Modern terminal UI with [Textual](https://github.com/Textualize/textual)
+- **Transcription History**: Persistent storage of past transcriptions
+- **Global Commands**: Install `stt` and `stt-tui` for system-wide access
 
 ## Quick Start
 
@@ -23,11 +26,17 @@
 # Install dependencies
 ./scripts/install_deps.sh
 
-# Test one-shot mode
+# Launch the TUI (easiest way to start)
+make tui
+
+# Or test one-shot mode
 uv run python -m src.main --mode oneshot
 
-# Install as service
+# Install as service for hotkey trigger
 ./scripts/install_service.sh
+
+# Install global commands (stt, stt-tui)
+./scripts/install_global.sh
 ```
 
 ## Platform Support
@@ -69,6 +78,7 @@ uv run python -m src.main --mode oneshot
 - [Installation Guide](getting-started/installation.md)
 - [Quick Start](getting-started/quickstart.md)
 - [Configuration](getting-started/configuration.md)
+- [Text User Interface](user-guide/tui.md)
 - [Troubleshooting](user-guide/troubleshooting.md)
 
 ## License

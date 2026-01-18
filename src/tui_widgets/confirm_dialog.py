@@ -20,8 +20,7 @@ class ConfirmDialog(ModalScreen[bool]):
         padding: 1 2;
         width: 50;
         max-width: 80%;
-        height: auto;
-        max-height: 80%;
+        height: 12;
     }
 
     ConfirmDialog .dialog-title {
@@ -40,7 +39,7 @@ class ConfirmDialog(ModalScreen[bool]):
     }
 
     ConfirmDialog .dialog-buttons {
-        height: auto;
+        height: 3;
         margin-top: 1;
         width: 100%;
         align: center middle;
@@ -49,6 +48,7 @@ class ConfirmDialog(ModalScreen[bool]):
     ConfirmDialog Button {
         margin: 0 1;
         min-width: 12;
+        height: 3;
     }
     """
 
@@ -110,7 +110,8 @@ class RestartWarningDialog(ModalScreen[bool]):
         padding: 1 2;
         width: 60;
         max-width: 90%;
-        height: auto;
+        min-height: 16;
+        max-height: 80%;
     }
 
     RestartWarningDialog .dialog-title {
@@ -151,6 +152,8 @@ class RestartWarningDialog(ModalScreen[bool]):
 
     RestartWarningDialog Button {
         margin: 0 1;
+        min-width: 12;
+        height: 3;
     }
     """
 

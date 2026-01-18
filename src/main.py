@@ -565,5 +565,64 @@ def main():
         sys.exit(1)
 
 
+def main_tui():
+    """Entry point for TUI mode (stt-tui command).
+
+    This function provides a direct entry point for the TUI interface,
+    with automatic config path resolution for global installation.
+    """
+    import os
+
+    # Determine config path
+    # Priority: STT_CONFIG env var > local config > ~/.config/stt-clipboard/config.yaml
+    config_path = os.environ.get("STT_CONFIG")
+
+    if not config_path:
+        # Try local config first (for development)
+        local_config = Path("config/config.yaml")
+        if local_config.exists():
+            config_path = str(local_config)
+        else:
+            # Fall back to user config directory
+            xdg_config = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+            user_config = Path(xdg_config) / "stt-clipboard" / "config.yaml"
+            if user_config.exists():
+                config_path = str(user_config)
+            else:
+                # Default to local (will fail if not found, but with clear error)
+                config_path = "config/config.yaml"
+
+    try:
+        # Load configuration
+        config = Config.from_yaml(config_path)
+
+        # Validate config
+        config.validate()
+
+        # Validate system tools
+        tools_result = config.validate_system_tools()
+        if not tools_result.is_valid:
+            for error in tools_result.errors:
+                print(f"ERROR: {error}", file=sys.stderr)  # noqa: T201
+            sys.exit(1)
+
+        # Run TUI
+        from src.tui import run_tui
+
+        run_tui(config)
+
+    except FileNotFoundError:
+        print(f"ERROR: Config file not found: {config_path}", file=sys.stderr)  # noqa: T201
+        print(  # noqa: T201
+            "Create a config file or set STT_CONFIG environment variable.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    except Exception as e:
+        print(f"ERROR: {e}", file=sys.stderr)  # noqa: T201
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     main()
