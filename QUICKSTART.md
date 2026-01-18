@@ -24,7 +24,7 @@ This will install:
 uv run python -m src.main --mode oneshot
 ```
 
-- Speak into your microphone (French or English)
+- Speak into your microphone (FR, EN, DE, ES, or IT)
 - Wait 1.2s of silence
 - Text appears in your clipboard
 - Paste with Ctrl+V
@@ -128,7 +128,7 @@ audio:
 
 transcription:
   model_size: base             # base (accurate) or tiny (faster)
-  language: ""                 # "" = auto-detect, "fr" = French only, "en" = English only
+  language: ""                 # "" = auto-detect, or "fr", "en", "de", "es", "it"
 
 punctuation:
   french_spacing: true         # Auto-apply French spacing for French text

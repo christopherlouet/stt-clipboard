@@ -26,13 +26,13 @@
 ┌─────────────────────────────────────────────────────────┐
 │  Step 2: WhisperTranscriber transcribes audio           │
 │          - faster-whisper (CTranslate2)                 │
-│          - Optimized for CPU, French/English            │
+│          - Optimized for CPU, multilingual              │
 │          (transcription.py)                             │
 └─────────────────────┬───────────────────────────────────┘
                       ↓
 ┌─────────────────────────────────────────────────────────┐
 │  Step 3: PunctuationProcessor post-processes            │
-│          - Language-aware typography (FR/EN)            │
+│          - Language-aware typography (FR/EN/DE/ES/IT)   │
 │          - Capitalize sentences                         │
 │          (punctuation.py)                               │
 └─────────────────────┬───────────────────────────────────┘

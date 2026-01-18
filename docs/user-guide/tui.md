@@ -143,7 +143,7 @@ Press ++o++ to open the settings editor.
 | Setting | Description | Restart Required |
 |---------|-------------|------------------|
 | Model Size | Whisper model (tiny/base/small/medium) | Yes |
-| Language | Auto-detect, French, or English | No |
+| Language | Auto-detect or FR/EN/DE/ES/IT | No |
 | Device | CPU or CUDA | Yes |
 | Compute Type | int8/int16/float16/float32 | Yes |
 | Beam Size | Decoding beam size (1-10) | No |

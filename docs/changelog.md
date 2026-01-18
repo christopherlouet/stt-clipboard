@@ -77,7 +77,7 @@ For the full changelog, see [CHANGELOG.md](https://github.com/christopherlouet/s
 - Initial release
 - Offline speech-to-text using faster-whisper
 - Voice Activity Detection with Silero VAD
-- Bilingual support (French/English) with auto-detection
+- Multilingual support (FR/EN/DE/ES/IT) with auto-detection
 - Language-aware punctuation processing
 - Universal clipboard support (Wayland, X11, macOS)
 - Auto-paste functionality (xdotool, ydotool, wtype)

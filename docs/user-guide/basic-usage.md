@@ -67,9 +67,9 @@ uv run python -m src.main --daemon --log-level DEBUG
 
 ### Language
 
-- The system auto-detects French and English
+- The system auto-detects: French, English, German, Spanish, Italian
+- Each language has specific punctuation rules
 - French text gets French spacing (space before ? ! : ;)
-- English text gets standard English punctuation
 
 ## Module Testing
 

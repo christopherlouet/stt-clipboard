@@ -66,14 +66,14 @@ Wraps faster-whisper for efficient transcription.
 
 - CTranslate2 backend for CPU optimization
 - int8 quantization for 2-3x speedup
-- Auto-detects French/English
+- Auto-detects language (FR/EN/DE/ES/IT)
 
 ### punctuation.py - PunctuationProcessor
 
 Language-aware post-processing.
 
-- French: Adds space before `? ! : ;`
-- English: Removes spaces before punctuation
+- Supports: French, English, German, Spanish, Italian
+- Each language has specific punctuation rules
 - Capitalizes sentences
 
 ### clipboard.py - ClipboardManager

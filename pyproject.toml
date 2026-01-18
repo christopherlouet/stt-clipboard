@@ -1,7 +1,7 @@
 [project]
 name = "stt-clipboard"
 version = "1.4.2"
-description = "Offline bilingual (French/English) Speech-to-Text service for Wayland/X11 clipboard"
+description = "Offline multilingual (FR/EN/DE/ES/IT) Speech-to-Text service for Linux and macOS"
 authors = [
     {name = "Christopher LOUËT"}
 ]

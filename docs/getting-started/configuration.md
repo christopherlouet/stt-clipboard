@@ -93,7 +93,7 @@ hotkey:
 
 ```yaml
 transcription:
-  language: ""  # Auto-detect French/English
+  language: ""  # Auto-detect (FR/EN/DE/ES/IT)
 ```
 
 ### Force Single Language
@@ -101,6 +101,7 @@ transcription:
 ```yaml
 transcription:
   language: "fr"  # French only (slightly faster)
+  # Supported: "fr", "en", "de", "es", "it"
 ```
 
 ## Applying Changes

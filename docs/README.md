@@ -175,7 +175,7 @@ systemctl --user restart stt-clipboard
 **A:** Yes, 100% offline. Models are downloaded once during setup, then all processing is local.
 
 ### Q: What languages are supported?
-**A:** French and English with automatic detection. The punctuation is adapted to each language.
+**A:** French, English, German, Spanish, and Italian with automatic detection. Punctuation is adapted per language.
 
 ### Q: How much disk space is needed?
 **A:** ~2GB for models and dependencies.

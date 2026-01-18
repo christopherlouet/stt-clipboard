@@ -7,7 +7,7 @@ This document explains the technical architecture of the system.
 **Supported Platforms:**
 - **Distributions**: Debian, Ubuntu, Fedora, RHEL, CentOS, Rocky Linux, AlmaLinux
 - **Display Servers**: Wayland and X11 (auto-detected)
-- **Languages**: French and English (auto-detected)
+- **Languages**: French, English, German, Spanish, Italian (auto-detected)
 
 The system automatically detects the environment and adapts accordingly.
 
@@ -502,7 +502,7 @@ language=None  # or ""
 # Fixed language
 language="fr"
 # Skip detection, ~100ms faster
-# But loses bilingual support
+# But loses multilingual support
 
 # Trade-off: Auto-detection worth the latency
 ```
@@ -655,13 +655,13 @@ class STTGui:
 - Synchronous pipeline (no unnecessary async complexity)
 - Unix socket for triggers (simple, robust)
 - Universal clipboard (Wayland + X11 support)
-- Bilingual support with language-aware punctuation
+- Multilingual support with language-aware punctuation (FR/EN/DE/ES/IT)
 - Multi-distribution compatibility (Debian + RHEL families)
 
 **Auto-detection at every level:**
 1. **Distribution**: apt, dnf, or yum → installs correct packages
 2. **Display server**: Wayland or X11 → uses appropriate clipboard tool
-3. **Language**: French or English → applies correct punctuation rules
+3. **Language**: FR, EN, DE, ES, IT → applies correct punctuation rules
 
 **Accepted trade-offs:**
 - Base model vs Tiny: +5% accuracy, -40% speed ✓

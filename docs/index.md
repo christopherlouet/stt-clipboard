@@ -1,6 +1,6 @@
 # STT Clipboard
 
-**Privacy-focused, offline bilingual (French/English) speech-to-text for Linux and macOS**
+**Privacy-focused, offline multilingual speech-to-text for Linux and macOS**
 
 [![Version](https://img.shields.io/badge/version-1.4.2-blue.svg)](https://github.com/christopherlouet/stt-clipboard/releases/tag/v1.4.2)
 [![CI](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml/badge.svg)](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml)
@@ -11,7 +11,7 @@
 ## Features
 
 - **100% Offline**: All processing happens locally, zero network dependency
-- **Bilingual Support**: Automatic language detection for French and English
+- **Multilingual**: French, English, German, Spanish, Italian with auto-detection
 - **Low Latency**: ~1-2s transcription time after speech ends
 - **Privacy First**: No data leaves your machine
 - **Universal Clipboard**: Works on Wayland, X11, and macOS
