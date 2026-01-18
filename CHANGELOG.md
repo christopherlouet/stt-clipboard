@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-01-18
+
+### Changed
+- **Multilingual Documentation**
+  - Updated README title and descriptions to reflect full language support
+  - Changed "French/English" to "Multilingual (FR, EN, DE, ES, IT)"
+  - Fixed TUI ASCII art alignment
+
 ## [1.4.1] - 2026-01-18
 
 ### Changed
@@ -233,7 +241,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.2.0...v1.3.0
