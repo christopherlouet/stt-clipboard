@@ -226,16 +226,16 @@ class TestSTTAppCreation:
         assert app._is_continuous is False
         assert app._stop_requested is False
 
-    def test_should_initialize_stats_dict(self, test_config: Config) -> None:
-        """Test that app initializes stats dictionary."""
+    def test_should_initialize_stats_attributes(self, test_config: Config) -> None:
+        """Test that app initializes stats attributes."""
         from src.tui import STTApp
 
         app = STTApp(test_config)
-        assert "total_requests" in app.stats
-        assert "successful" in app.stats
-        assert "failed" in app.stats
-        assert "total_audio" in app.stats
-        assert "total_transcription" in app.stats
+        assert app._total_requests == 0
+        assert app._successful == 0
+        assert app._failed == 0
+        assert app._total_audio == 0.0
+        assert app._total_transcription == 0.0
 
     def test_should_have_correct_bindings(self, test_config: Config) -> None:
         """Test that app has correct key bindings."""
