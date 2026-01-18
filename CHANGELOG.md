@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-01-18
+
 ### Added
 - **Global Installation** (`scripts/install_global.sh`)
   - Install `stt` and `stt-tui` commands system-wide
@@ -26,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TUI Modal Dialogs** (`src/tui_widgets/`)
   - `ConfirmDialog`: Generic confirmation with customizable buttons
   - `RestartWarningDialog`: Lists settings requiring restart
+
+- **Documentation Updates**
+  - Comprehensive TUI guide (`docs/user-guide/tui.md`)
+  - Global installation instructions in README and mkdocs
+  - Updated changelog with v1.3.0 and v1.4.0 features
 
 ### Fixed
 - TUI console logging no longer interferes with interface display
@@ -214,7 +221,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.0.0...v1.1.0
