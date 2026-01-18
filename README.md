@@ -1,4 +1,4 @@
-# STT Clipboard - Offline Speech-to-Text (French/English)
+# STT Clipboard - Offline Speech-to-Text (Multilingual)
 
 [![Version](https://img.shields.io/badge/version-1.4.1-blue.svg)](https://github.com/christopherlouet/stt-clipboard/releases/tag/v1.4.1)
 [![CI](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml/badge.svg)](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml)
@@ -7,7 +7,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-Professional-grade, privacy-focused speech-to-text system with bilingual support (French/English) for Linux and macOS.
+Professional-grade, privacy-focused speech-to-text system with multilingual support (FR, EN, DE, ES, IT) for Linux and macOS.
 
 ## Table of Contents
 
@@ -72,7 +72,7 @@ stt-tui
 # Press hotkey → Speak → Pause → Text appears in clipboard
 ```
 
-## Text User Interface (TUI) - Bilingual FR/EN
+## Text User Interface (TUI) - Multilingual
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
@@ -115,7 +115,7 @@ Settings requiring restart are marked with `[*]`.
 ## Features
 
 - **100% Offline**: All processing happens locally, zero network dependency
-- **Bilingual Support**: Automatic French/English detection with smart punctuation
+- **Multilingual**: French, English, German, Spanish, Italian with smart punctuation
 - **Low Latency**: ~1-2s transcription time after speech ends
 - **Privacy First**: Audio processed in-memory only, never saved
 - **Universal Clipboard**: Wayland (wl-copy), X11 (xclip), macOS (pbcopy)
@@ -287,4 +287,4 @@ Built with [faster-whisper](https://github.com/guillaumekln/faster-whisper), [Si
 
 ---
 
-**Made with care for the privacy-conscious bilingual community**
+**Made with care for the privacy-conscious multilingual community**
