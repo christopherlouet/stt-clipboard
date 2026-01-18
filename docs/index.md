@@ -2,7 +2,7 @@
 
 **Privacy-focused, offline bilingual (French/English) speech-to-text for Linux and macOS**
 
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/christopherlouet/stt-clipboard/releases/tag/v1.4.0)
+[![Version](https://img.shields.io/badge/version-1.4.1-blue.svg)](https://github.com/christopherlouet/stt-clipboard/releases/tag/v1.4.1)
 [![CI](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml/badge.svg)](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen.svg)](https://github.com/christopherlouet/stt-clipboard)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)

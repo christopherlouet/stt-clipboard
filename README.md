@@ -1,6 +1,6 @@
 # STT Clipboard - Offline Speech-to-Text (French/English)
 
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/christopherlouet/stt-clipboard/releases/tag/v1.4.0)
+[![Version](https://img.shields.io/badge/version-1.4.1-blue.svg)](https://github.com/christopherlouet/stt-clipboard/releases/tag/v1.4.1)
 [![CI](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml/badge.svg)](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-MkDocs-blue.svg)](https://christopherlouet.github.io/stt-clipboard/)
 [![Coverage](https://img.shields.io/badge/coverage-86%25-brightgreen.svg)](https://github.com/christopherlouet/stt-clipboard)

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-01-18
+
+### Changed
+- **README Overhaul**
+  - Added Table of Contents for easier navigation
+  - Added version badge (v1.4.0)
+  - Added concrete usage examples (oneshot, continuous, TUI)
+  - Added ASCII TUI visualization with keyboard shortcuts
+  - Reduced file size by 62% (756→291 lines) while preserving essential info
+  - Streamlined installation to numbered steps
+  - Simplified troubleshooting with table format
+
 ## [1.4.0] - 2026-01-18
 
 ### Added
@@ -221,7 +233,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.1.0...v1.2.0
