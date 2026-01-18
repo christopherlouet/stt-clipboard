@@ -1,6 +1,6 @@
 [project]
 name = "stt-clipboard"
-version = "1.4.2"
+version = "1.4.3"
 description = "Offline multilingual (FR/EN/DE/ES/IT) Speech-to-Text service for Linux and macOS"
 authors = [
     {name = "Christopher LOUËT"}

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-01-18
+
+### Changed
+- **Complete Multilingual Documentation Update**
+  - Updated all documentation files (11 files) for multilingual support
+  - Updated mkdocs.yml site_description
+  - Updated pyproject.toml description
+  - Consistent terminology across CLAUDE.md, ARCHITECTURE.md, QUICKSTART.md
+  - Updated mkdocs pages: index, changelog, user-guide, architecture
+
 ## [1.4.2] - 2026-01-18
 
 ### Changed
@@ -241,7 +251,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.3...HEAD
+[1.4.3]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/christopherlouet/stt-clipboard/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/christopherlouet/stt-clipboard/compare/v1.3.0...v1.4.0
