@@ -1,5 +1,7 @@
 """Confirmation dialog for TUI settings."""
 
+from typing import Any
+
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
@@ -63,7 +65,7 @@ class ConfirmDialog(ModalScreen[bool]):
         message: str = "Are you sure?",
         confirm_label: str = "Yes",
         cancel_label: str = "No",
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.title_text = title
@@ -165,7 +167,7 @@ class RestartWarningDialog(ModalScreen[bool]):
     def __init__(
         self,
         changed_fields: list[str],
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.changed_fields = changed_fields

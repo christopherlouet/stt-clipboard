@@ -1146,5 +1146,176 @@ class TestPasteFailureHandling:
         assert service.stats["successful_transcriptions"] == 1
 
 
+class TestLogMasking:
+    """Tests for log masking of transcribed text (T015)."""
+
+    @pytest.mark.asyncio
+    @patch("src.main.WhisperTranscriber")
+    @patch("src.main.AudioRecorder")
+    @patch("src.main.PunctuationProcessor")
+    @patch("src.main.copy_to_clipboard")
+    @patch("src.main.notify_recording_started")
+    @patch("src.main.notify_text_copied")
+    async def test_info_log_does_not_contain_transcribed_text(
+        self,
+        mock_notify_copied: MagicMock,
+        mock_notify_started: MagicMock,
+        mock_copy: MagicMock,
+        mock_processor_class: MagicMock,
+        mock_recorder_class: MagicMock,
+        mock_transcriber_class: MagicMock,
+        mock_config: Config,
+    ):
+        """Test that INFO level logs show only length, not transcribed text."""
+        from loguru import logger
+
+        audio_data = np.zeros(16000, dtype=np.float32)
+
+        mock_recorder = MagicMock()
+        mock_recorder.record_until_silence.return_value = audio_data
+        mock_recorder_class.return_value = mock_recorder
+
+        mock_transcriber = MagicMock()
+        mock_transcriber.transcribe.return_value = "secret private text"
+        mock_transcriber.detected_language = "en"
+        mock_transcriber_class.return_value = mock_transcriber
+
+        mock_processor = MagicMock()
+        mock_processor.process.return_value = "Secret private text."
+        mock_processor_class.return_value = mock_processor
+
+        mock_copy.return_value = True
+
+        # Capture log messages
+        info_messages: list[str] = []
+        handler_id = logger.add(
+            lambda msg: info_messages.append(msg.record["message"]),
+            level="INFO",
+            filter=lambda record: record["level"].name == "INFO",
+        )
+
+        try:
+            service = STTService(mock_config)
+            await service.process_request()
+
+            # Check that no INFO log contains the actual transcribed text
+            for msg in info_messages:
+                assert (
+                    "secret private text" not in msg.lower()
+                ), f"INFO log leaks transcribed text: {msg}"
+        finally:
+            logger.remove(handler_id)
+
+    @pytest.mark.asyncio
+    @patch("src.main.WhisperTranscriber")
+    @patch("src.main.AudioRecorder")
+    @patch("src.main.PunctuationProcessor")
+    @patch("src.main.copy_to_clipboard")
+    @patch("src.main.notify_recording_started")
+    @patch("src.main.notify_text_copied")
+    async def test_info_log_shows_char_count(
+        self,
+        mock_notify_copied: MagicMock,
+        mock_notify_started: MagicMock,
+        mock_copy: MagicMock,
+        mock_processor_class: MagicMock,
+        mock_recorder_class: MagicMock,
+        mock_transcriber_class: MagicMock,
+        mock_config: Config,
+    ):
+        """Test that INFO level logs show character count."""
+        from loguru import logger
+
+        audio_data = np.zeros(16000, dtype=np.float32)
+
+        mock_recorder = MagicMock()
+        mock_recorder.record_until_silence.return_value = audio_data
+        mock_recorder_class.return_value = mock_recorder
+
+        mock_transcriber = MagicMock()
+        mock_transcriber.transcribe.return_value = "hello world"
+        mock_transcriber.detected_language = "en"
+        mock_transcriber_class.return_value = mock_transcriber
+
+        mock_processor = MagicMock()
+        mock_processor.process.return_value = "Hello world."
+        mock_processor_class.return_value = mock_processor
+
+        mock_copy.return_value = True
+
+        info_messages: list[str] = []
+        handler_id = logger.add(
+            lambda msg: info_messages.append(msg.record["message"]),
+            level="INFO",
+            filter=lambda record: record["level"].name == "INFO",
+        )
+
+        try:
+            service = STTService(mock_config)
+            await service.process_request()
+
+            # Check that char count appears in INFO logs
+            has_char_count = any("12 chars" in msg for msg in info_messages)
+            assert has_char_count, f"INFO log should show char count. Messages: {info_messages}"
+        finally:
+            logger.remove(handler_id)
+
+    @pytest.mark.asyncio
+    @patch("src.main.WhisperTranscriber")
+    @patch("src.main.AudioRecorder")
+    @patch("src.main.PunctuationProcessor")
+    @patch("src.main.copy_to_clipboard")
+    @patch("src.main.notify_recording_started")
+    @patch("src.main.notify_text_copied")
+    async def test_debug_log_contains_transcribed_text(
+        self,
+        mock_notify_copied: MagicMock,
+        mock_notify_started: MagicMock,
+        mock_copy: MagicMock,
+        mock_processor_class: MagicMock,
+        mock_recorder_class: MagicMock,
+        mock_transcriber_class: MagicMock,
+        mock_config: Config,
+    ):
+        """Test that DEBUG level logs contain the full transcribed text."""
+        from loguru import logger
+
+        audio_data = np.zeros(16000, dtype=np.float32)
+
+        mock_recorder = MagicMock()
+        mock_recorder.record_until_silence.return_value = audio_data
+        mock_recorder_class.return_value = mock_recorder
+
+        mock_transcriber = MagicMock()
+        mock_transcriber.transcribe.return_value = "debug visible text"
+        mock_transcriber.detected_language = "en"
+        mock_transcriber_class.return_value = mock_transcriber
+
+        mock_processor = MagicMock()
+        mock_processor.process.return_value = "Debug visible text."
+        mock_processor_class.return_value = mock_processor
+
+        mock_copy.return_value = True
+
+        debug_messages: list[str] = []
+        handler_id = logger.add(
+            lambda msg: debug_messages.append(msg.record["message"]),
+            level="DEBUG",
+            filter=lambda record: record["level"].name == "DEBUG",
+        )
+
+        try:
+            service = STTService(mock_config)
+            await service.process_request()
+
+            # Check that DEBUG log contains the actual text
+            has_text = any("debug visible text" in msg.lower() for msg in debug_messages)
+            assert (
+                has_text
+            ), f"DEBUG log should contain transcribed text. Messages: {debug_messages}"
+        finally:
+            logger.remove(handler_id)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

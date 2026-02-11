@@ -94,6 +94,7 @@ class WaylandClipboardManager(BaseClipboardManager):
             )
 
             # Send text to wl-copy
+            assert process.stdin is not None
             process.stdin.write(text.encode("utf-8"))
             process.stdin.close()
 
@@ -104,6 +105,7 @@ class WaylandClipboardManager(BaseClipboardManager):
 
             # Check if process had any immediate errors
             if process.poll() is not None and process.returncode != 0:
+                assert process.stderr is not None
                 stderr = process.stderr.read().decode("utf-8", errors="ignore").strip()
                 logger.error(f"wl-copy failed with code {process.returncode}: {stderr}")
                 return False

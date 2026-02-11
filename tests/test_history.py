@@ -330,5 +330,47 @@ class TestGetHistory:
         assert history1 is history2
 
 
+class TestHistoryTextTruncation:
+    """Tests for text truncation in history (T019)."""
+
+    def test_short_text_not_truncated(self, tmp_path: Path) -> None:
+        """Test that text <= max_text_length is kept as-is."""
+        history = TranscriptionHistory(
+            history_file=tmp_path / "test.json",
+            max_text_length=1000,
+        )
+        entry = history.add("Short text")
+        assert entry.text == "Short text"
+
+    def test_exact_limit_text_not_truncated(self, tmp_path: Path) -> None:
+        """Test that text exactly at max_text_length is kept as-is."""
+        text = "A" * 1000
+        history = TranscriptionHistory(
+            history_file=tmp_path / "test.json",
+            max_text_length=1000,
+        )
+        entry = history.add(text)
+        assert entry.text == text
+        assert len(entry.text) == 1000
+
+    def test_long_text_truncated(self, tmp_path: Path) -> None:
+        """Test that text > max_text_length is truncated with indicator."""
+        text = "A" * 1500
+        history = TranscriptionHistory(
+            history_file=tmp_path / "test.json",
+            max_text_length=1000,
+        )
+        entry = history.add(text)
+        assert len(entry.text) <= 1006  # 1000 + " [...]"
+        assert entry.text.endswith(" [...]")
+
+    def test_default_max_text_length(self, tmp_path: Path) -> None:
+        """Test that default max_text_length is 1000."""
+        history = TranscriptionHistory(
+            history_file=tmp_path / "test.json",
+        )
+        assert history.max_text_length == 1000
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

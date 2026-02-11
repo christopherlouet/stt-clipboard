@@ -13,6 +13,7 @@ from src.config import (
     Config,
     HotkeyConfig,
     LoggingConfig,
+    MemoryConfig,
     PasteConfig,
     PunctuationConfig,
     TranscriptionConfig,
@@ -221,6 +222,33 @@ class TestHotkeyConfig:
         assert config.socket_path == "/run/user/1000/stt.sock"
 
 
+class TestMemoryConfig:
+    """Tests for MemoryConfig dataclass."""
+
+    def test_default_values(self):
+        """Test default values for MemoryConfig."""
+        config = MemoryConfig()
+
+        assert config.auto_unload_model is True
+        assert config.idle_timeout_seconds == 300
+        assert config.max_tui_log_lines == 1000
+        assert config.max_history_text_length == 1000
+
+    def test_custom_values(self):
+        """Test custom values for MemoryConfig."""
+        config = MemoryConfig(
+            auto_unload_model=False,
+            idle_timeout_seconds=600,
+            max_tui_log_lines=500,
+            max_history_text_length=2000,
+        )
+
+        assert config.auto_unload_model is False
+        assert config.idle_timeout_seconds == 600
+        assert config.max_tui_log_lines == 500
+        assert config.max_history_text_length == 2000
+
+
 class TestConfig:
     """Tests for main Config class."""
 
@@ -236,6 +264,7 @@ class TestConfig:
         assert isinstance(config.paste, PasteConfig)
         assert isinstance(config.logging, LoggingConfig)
         assert isinstance(config.hotkey, HotkeyConfig)
+        assert isinstance(config.memory, MemoryConfig)
 
     def test_custom_sub_configs(self):
         """Test Config with custom sub-configs."""
@@ -310,6 +339,45 @@ audio:
             assert config.audio.channels == 1
             # Other sections should use defaults
             assert config.transcription.model_size == "tiny"
+
+            Path(f.name).unlink()
+
+    def test_loads_memory_section_from_yaml(self):
+        """Test loading memory config from YAML file."""
+        yaml_content = """
+memory:
+  auto_unload_model: false
+  idle_timeout_seconds: 600
+  max_tui_log_lines: 500
+  max_history_text_length: 2000
+"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write(yaml_content)
+            f.flush()
+
+            config = Config.from_yaml(f.name)
+
+            assert config.memory.auto_unload_model is False
+            assert config.memory.idle_timeout_seconds == 600
+            assert config.memory.max_tui_log_lines == 500
+            assert config.memory.max_history_text_length == 2000
+
+            Path(f.name).unlink()
+
+    def test_memory_defaults_when_section_missing(self):
+        """Test that memory defaults are used when section is missing from YAML."""
+        yaml_content = """
+audio:
+  sample_rate: 16000
+"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write(yaml_content)
+            f.flush()
+
+            config = Config.from_yaml(f.name)
+
+            assert config.memory.auto_unload_model is True
+            assert config.memory.idle_timeout_seconds == 300
 
             Path(f.name).unlink()
 
@@ -444,6 +512,46 @@ class TestConfigValidate:
         config = Config(logging=LoggingConfig(level="debug"))
         config.validate()  # Should not raise
 
+    def test_invalid_idle_timeout_zero_fails(self):
+        """Test that zero idle timeout fails validation."""
+        config = Config(memory=MemoryConfig(idle_timeout_seconds=0))
+
+        with pytest.raises(ValueError, match="idle_timeout_seconds must be positive"):
+            config.validate()
+
+    def test_invalid_idle_timeout_negative_fails(self):
+        """Test that negative idle timeout fails validation."""
+        config = Config(memory=MemoryConfig(idle_timeout_seconds=-1))
+
+        with pytest.raises(ValueError, match="idle_timeout_seconds must be positive"):
+            config.validate()
+
+    def test_invalid_max_tui_log_lines_zero_fails(self):
+        """Test that zero max_tui_log_lines fails validation."""
+        config = Config(memory=MemoryConfig(max_tui_log_lines=0))
+
+        with pytest.raises(ValueError, match="max_tui_log_lines must be positive"):
+            config.validate()
+
+    def test_invalid_max_history_text_length_zero_fails(self):
+        """Test that zero max_history_text_length fails validation."""
+        config = Config(memory=MemoryConfig(max_history_text_length=0))
+
+        with pytest.raises(ValueError, match="max_history_text_length must be positive"):
+            config.validate()
+
+    def test_valid_memory_config_passes(self):
+        """Test that valid memory config passes validation."""
+        config = Config(
+            memory=MemoryConfig(
+                auto_unload_model=True,
+                idle_timeout_seconds=60,
+                max_tui_log_lines=100,
+                max_history_text_length=500,
+            )
+        )
+        config.validate()  # Should not raise
+
 
 class TestConfigToDict:
     """Tests for Config.to_dict method."""
@@ -462,6 +570,17 @@ class TestConfigToDict:
         assert "paste" in result
         assert "logging" in result
         assert "hotkey" in result
+        assert "memory" in result
+
+    def test_memory_in_to_dict(self):
+        """Test that memory config is present in to_dict output."""
+        config = Config(memory=MemoryConfig(idle_timeout_seconds=600))
+        result = config.to_dict()
+
+        assert result["memory"]["auto_unload_model"] is True
+        assert result["memory"]["idle_timeout_seconds"] == 600
+        assert result["memory"]["max_tui_log_lines"] == 1000
+        assert result["memory"]["max_history_text_length"] == 1000
 
     def test_nested_structure(self):
         """Test that nested structure is correct."""

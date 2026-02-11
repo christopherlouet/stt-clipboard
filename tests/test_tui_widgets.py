@@ -253,3 +253,61 @@ class TestWidgetImports:
         from src.tui_widgets import TextInput
 
         assert TextInput is not None
+
+
+class TestMemoryPanel:
+    """Tests for MemoryPanel widget (T021)."""
+
+    def test_memory_panel_importable(self) -> None:
+        """Test that MemoryPanel can be imported."""
+        from src.tui_widgets.memory_panel import MemoryPanel
+
+        assert MemoryPanel is not None
+
+    def test_memory_panel_creates(self) -> None:
+        """Test that MemoryPanel can be instantiated."""
+        from src.tui_widgets.memory_panel import MemoryPanel
+
+        panel = MemoryPanel()
+        assert panel is not None
+
+    def test_memory_panel_has_get_memory_mb(self) -> None:
+        """Test that MemoryPanel has _get_memory_mb method."""
+        from src.tui_widgets.memory_panel import MemoryPanel
+
+        panel = MemoryPanel()
+        assert hasattr(panel, "_get_memory_mb")
+        assert callable(panel._get_memory_mb)
+
+    def test_memory_panel_returns_float(self) -> None:
+        """Test that _get_memory_mb returns a float."""
+        from src.tui_widgets.memory_panel import MemoryPanel
+
+        panel = MemoryPanel()
+        result = panel._get_memory_mb()
+        assert isinstance(result, float)
+
+    def test_memory_panel_returns_positive_value(self) -> None:
+        """Test that _get_memory_mb returns a positive value."""
+        from src.tui_widgets.memory_panel import MemoryPanel
+
+        panel = MemoryPanel()
+        result = panel._get_memory_mb()
+        assert result > 0.0
+
+    def test_memory_panel_handles_psutil_failure(self) -> None:
+        """Test that _get_memory_mb returns -1.0 when psutil fails."""
+        from unittest.mock import patch
+
+        from src.tui_widgets.memory_panel import MemoryPanel
+
+        panel = MemoryPanel()
+        with patch("src.tui_widgets.memory_panel.psutil.Process", side_effect=Exception("fail")):
+            result = panel._get_memory_mb()
+            assert result == -1.0
+
+    def test_memory_panel_exported_from_package(self) -> None:
+        """Test that MemoryPanel is exported from tui_widgets."""
+        from src.tui_widgets import MemoryPanel
+
+        assert MemoryPanel is not None

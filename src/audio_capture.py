@@ -4,6 +4,7 @@ import collections
 import threading
 import time
 from collections.abc import Callable, Iterator
+from typing import Any
 
 import numpy as np
 import sounddevice as sd
@@ -38,7 +39,7 @@ class AudioRecorder:
 
         # Audio buffer (ring buffer for pre-buffering)
         max_samples = audio_config.sample_rate * audio_config.max_recording_duration
-        self.buffer = collections.deque(maxlen=max_samples)
+        self.buffer: collections.deque[float] = collections.deque(maxlen=max_samples)
 
         # Recording state
         self.is_recording = False
@@ -53,7 +54,9 @@ class AudioRecorder:
         # Pre-buffer for capturing speech start
         self.pre_buffer_duration = 0.5  # seconds
         self.pre_buffer_samples = int(self.pre_buffer_duration * audio_config.sample_rate)
-        self.pre_buffer = collections.deque(maxlen=self.pre_buffer_samples)
+        self.pre_buffer: collections.deque[float] = collections.deque(
+            maxlen=self.pre_buffer_samples
+        )
 
         # Minimum speech duration (avoid false starts)
         self.min_speech_samples = int(audio_config.min_speech_duration * audio_config.sample_rate)
@@ -70,7 +73,7 @@ class AudioRecorder:
             f"max={audio_config.max_recording_duration}s"
         )
 
-    def _load_vad_model(self):
+    def _load_vad_model(self) -> None:
         """Load Silero VAD model (lazy loading)."""
         if self.vad_model is not None:
             return
@@ -78,13 +81,14 @@ class AudioRecorder:
         try:
             logger.info("Loading Silero VAD model...")
             # Loading from official Silero VAD repository - safe and expected
-            self.vad_model, _ = torch.hub.load(  # nosec B614
+            model, _ = torch.hub.load(  # type: ignore[no-untyped-call]  # nosec B614
                 repo_or_dir="snakers4/silero-vad",
                 model="silero_vad",
                 force_reload=False,
                 onnx=False,  # Use PyTorch version
             )
-            self.vad_model.eval()
+            model.eval()
+            self.vad_model = model
             logger.info("Silero VAD model loaded successfully")
 
         except Exception as e:
@@ -120,8 +124,9 @@ class AudioRecorder:
                 audio_tensor = audio_tensor.squeeze()
 
             # VAD inference
+            assert self.vad_model is not None
             with torch.no_grad():
-                speech_prob = self.vad_model(audio_tensor, self._vad_sample_rate).item()
+                speech_prob: float = self.vad_model(audio_tensor, self._vad_sample_rate).item()
 
             return speech_prob
 
@@ -129,7 +134,7 @@ class AudioRecorder:
             logger.warning(f"VAD detection failed: {e}")
             return 0.0
 
-    def _audio_callback(self, indata: np.ndarray, frames: int, time_info, status):
+    def _audio_callback(self, indata: np.ndarray, frames: int, time_info: Any, status: Any) -> None:
         """Callback for sounddevice stream.
 
         Args:
@@ -363,7 +368,7 @@ class AudioRecorder:
 
         return input_devices
 
-    def set_default_device(self, device_id: int | None = None):
+    def set_default_device(self, device_id: int | None = None) -> None:
         """Set default audio input device.
 
         Args:
@@ -378,7 +383,7 @@ class AudioRecorder:
 
 
 # Convenience functions
-def list_audio_devices():
+def list_audio_devices() -> None:
     """Print list of available audio devices."""
     print("Available Audio Input Devices:")
     print("=" * 60)
@@ -424,10 +429,10 @@ if __name__ == "__main__":
     )
 
     # Callbacks
-    def on_start():
+    def on_start() -> None:
         print("🎤 Speech detected!")
 
-    def on_end():
+    def on_end() -> None:
         print("🔇 Silence detected, stopping...")
 
     # Create recorder

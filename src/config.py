@@ -106,6 +106,16 @@ class HistoryConfig:
 
 
 @dataclass
+class MemoryConfig:
+    """Memory management configuration."""
+
+    auto_unload_model: bool = True
+    idle_timeout_seconds: int = 300
+    max_tui_log_lines: int = 1000
+    max_history_text_length: int = 1000
+
+
+@dataclass
 class ValidationResult:
     """Result of system tools validation."""
 
@@ -127,6 +137,7 @@ class Config:
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     hotkey: HotkeyConfig = field(default_factory=HotkeyConfig)
     history: HistoryConfig = field(default_factory=HistoryConfig)
+    memory: MemoryConfig = field(default_factory=MemoryConfig)
 
     @classmethod
     def from_yaml(cls, config_path: str | None = None) -> "Config":
@@ -160,6 +171,7 @@ class Config:
         logging_data = data.get("logging", {})
         hotkey_data = data.get("hotkey", {})
         history_data = data.get("history", {})
+        memory_data = data.get("memory", {})
 
         return cls(
             audio=AudioConfig(**audio_data),
@@ -171,6 +183,7 @@ class Config:
             logging=LoggingConfig(**logging_data),
             hotkey=HotkeyConfig(**hotkey_data),
             history=HistoryConfig(**history_data),
+            memory=MemoryConfig(**memory_data),
         )
 
     def validate(self) -> None:
@@ -222,6 +235,20 @@ class Config:
                     f"Invalid language: {self.transcription.language}. "
                     f"Must be one of {valid_languages} or empty for auto-detect"
                 )
+
+        # Memory validation
+        if self.memory.idle_timeout_seconds <= 0:
+            raise ValueError(
+                f"idle_timeout_seconds must be positive: {self.memory.idle_timeout_seconds}"
+            )
+
+        if self.memory.max_tui_log_lines <= 0:
+            raise ValueError(f"max_tui_log_lines must be positive: {self.memory.max_tui_log_lines}")
+
+        if self.memory.max_history_text_length <= 0:
+            raise ValueError(
+                f"max_history_text_length must be positive: {self.memory.max_history_text_length}"
+            )
 
         # Logging validation
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -323,6 +350,12 @@ class Config:
                 "file": self.history.file,
                 "max_entries": self.history.max_entries,
                 "auto_save": self.history.auto_save,
+            },
+            "memory": {
+                "auto_unload_model": self.memory.auto_unload_model,
+                "idle_timeout_seconds": self.memory.idle_timeout_seconds,
+                "max_tui_log_lines": self.memory.max_tui_log_lines,
+                "max_history_text_length": self.memory.max_history_text_length,
             },
         }
 

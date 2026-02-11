@@ -77,6 +77,7 @@ class TranscriptionHistory:
         history_file: str | Path | None = None,
         max_entries: int = 100,
         auto_save: bool = True,
+        max_text_length: int = 1000,
     ):
         """Initialize transcription history.
 
@@ -84,10 +85,12 @@ class TranscriptionHistory:
             history_file: Path to history file. None disables persistence.
             max_entries: Maximum number of entries to keep (FIFO)
             auto_save: Whether to save after each add
+            max_text_length: Maximum text length before truncation
         """
         self.history_file = Path(history_file) if history_file else None
         self.max_entries = max_entries
         self.auto_save = auto_save
+        self.max_text_length = max_text_length
         self._entries: list[TranscriptionEntry] = []
         self._lock = threading.Lock()
 
@@ -118,8 +121,13 @@ class TranscriptionHistory:
         Returns:
             The created TranscriptionEntry
         """
+        # Truncate long text for history storage
+        stored_text = text
+        if len(text) > self.max_text_length:
+            stored_text = text[: self.max_text_length] + " [...]"
+
         entry = TranscriptionEntry.create(
-            text=text,
+            text=stored_text,
             language=language,
             audio_duration=audio_duration,
             transcription_time=transcription_time,

@@ -1,6 +1,8 @@
 """Text User Interface for STT Clipboard."""
 
+import threading
 from datetime import datetime
+from typing import Any
 
 from loguru import logger
 from rich.text import Text
@@ -18,6 +20,7 @@ from src.notifications import notify_text_copied
 from src.punctuation import PunctuationProcessor
 from src.transcription import WhisperTranscriber
 from src.tui_settings import SettingsScreen
+from src.tui_widgets.memory_panel import MemoryPanel
 
 # Responsive breakpoints
 BREAKPOINT_COMPACT = 80
@@ -79,7 +82,7 @@ class StatsPanel(Static):
     }
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.total_requests: int = 0
         self.successful: int = 0
@@ -119,11 +122,21 @@ class StatsPanel(Static):
 class TranscriptionLog(RichLog):
     """Log widget for transcriptions."""
 
+    def __init__(self, max_lines: int = 1000, **kwargs: Any) -> None:
+        super().__init__(max_lines=max_lines, **kwargs)
+        self._line_count = 0
+
     def add_transcription(self, text: str, language: str | None = None) -> None:
         """Add a transcription entry."""
+        if self.max_lines is not None and self._line_count >= self.max_lines:
+            self.clear()
+            self.write("[dim]Log cleared (max lines reached)[/]")
+            self._line_count = 0
+
         timestamp = datetime.now().strftime("%H:%M:%S")
         lang_str = f"[{language}]" if language else ""
         self.write(Text(f"[{timestamp}] {lang_str} {text}"))
+        self._line_count += 1
 
 
 class STTApp(App):
@@ -157,6 +170,13 @@ class STTApp(App):
     #config-info {
         color: $text-muted;
         padding-left: 1;
+    }
+
+    #memory-panel {
+        color: $text-muted;
+        width: auto;
+        dock: right;
+        padding-right: 1;
     }
 
     /* Main content area */
@@ -316,6 +336,9 @@ class STTApp(App):
         self._is_continuous = False
         self._stop_requested = False
 
+        # Idle timer for model auto-unload
+        self._idle_timer: threading.Timer | None = None
+
         # Stats - using typed attributes for clarity
         self._total_requests: int = 0
         self._successful: int = 0
@@ -333,6 +356,7 @@ class STTApp(App):
         with Horizontal(id="status-bar"):
             yield StatusIndicator(id="status-indicator")
             yield Static(f"[dim]Model:[/] {model}  [dim]Lang:[/] {lang}", id="config-info")
+            yield MemoryPanel(id="memory-panel")
 
         with Container(id="main-container"):
             yield TranscriptionLog(id="transcription-log", highlight=True, markup=True)
@@ -404,6 +428,35 @@ class STTApp(App):
             self._total_audio,
             self._total_transcription,
         )
+
+    def _reset_idle_timer(self) -> None:
+        """Reset the idle timer for model auto-unload."""
+        if not self.config.memory.auto_unload_model:
+            return
+
+        if self._idle_timer is not None:
+            self._idle_timer.cancel()
+
+        self._idle_timer = threading.Timer(
+            self.config.memory.idle_timeout_seconds,
+            self._on_idle_timeout,
+        )
+        self._idle_timer.daemon = True
+        self._idle_timer.start()
+
+    def _on_idle_timeout(self) -> None:
+        """Handle idle timeout by unloading the model."""
+        if self.transcriber.is_loaded:
+            logger.info(
+                f"Idle timeout ({self.config.memory.idle_timeout_seconds}s) "
+                "reached, unloading model to free memory"
+            )
+            self.transcriber.unload_model()
+            try:
+                log = self.query_one("#transcription-log", TranscriptionLog)
+                log.write("[dim]Model unloaded (idle timeout)[/]")
+            except Exception:
+                logger.debug("TUI not mounted yet, skipping unload message")
 
     def action_record(self) -> None:
         """Start single recording."""
@@ -565,6 +618,9 @@ class STTApp(App):
                     transcription_time=transcription_time,
                 )
 
+            # Reset idle timer after successful transcription
+            self._reset_idle_timer()
+
         except Exception as e:
             log.write(f"[red]Error: {e}[/]")
             self._failed += 1
@@ -652,6 +708,9 @@ class STTApp(App):
                         audio_duration=audio_duration,
                         transcription_time=transcription_time,
                     )
+
+                # Reset idle timer after successful transcription
+                self._reset_idle_timer()
 
             log.write(f"[bold green]Continuous mode stopped ({segment_count} segments)[/]")
 

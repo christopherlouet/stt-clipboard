@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -80,6 +81,9 @@ class STTService:
                 f"History enabled: {config.history.file} (max {config.history.max_entries})"
             )
 
+        # Idle timer for model auto-unload
+        self._idle_timer: threading.Timer | None = None
+
         # Stats
         self.stats = {
             "total_requests": 0,
@@ -91,7 +95,31 @@ class STTService:
 
         logger.info("STTService initialized")
 
-    async def initialize(self):
+    def _reset_idle_timer(self) -> None:
+        """Reset the idle timer for model auto-unload."""
+        if not self.config.memory.auto_unload_model:
+            return
+
+        if self._idle_timer is not None:
+            self._idle_timer.cancel()
+
+        self._idle_timer = threading.Timer(
+            self.config.memory.idle_timeout_seconds,
+            self._on_idle_timeout,
+        )
+        self._idle_timer.daemon = True
+        self._idle_timer.start()
+
+    def _on_idle_timeout(self) -> None:
+        """Handle idle timeout by unloading the model."""
+        if self.transcriber.is_loaded:
+            logger.info(
+                f"Idle timeout ({self.config.memory.idle_timeout_seconds}s) "
+                "reached, unloading model to free memory"
+            )
+            self.transcriber.unload_model()
+
+    async def initialize(self) -> None:
         """Initialize service (load models, etc.)."""
         logger.info("Initializing STT service...")
 
@@ -149,14 +177,16 @@ class STTService:
                 self.stats["failed_transcriptions"] += 1
                 return None
 
-            logger.info(f"Transcription: '{text}'")
+            logger.info(f"Transcription: {len(text)} chars")
+            logger.debug(f"Content: '{text}'")
 
             # Step 3: Post-process punctuation (language-aware)
             if self.config.punctuation.enabled:
                 detected_lang = self.transcriber.detected_language
                 logger.debug(f"Applying punctuation rules (detected: {detected_lang})...")
                 text = self.punctuation_processor.process(text, detected_language=detected_lang)
-                logger.info(f"After punctuation: '{text}'")
+                logger.info(f"After punctuation: {len(text)} chars")
+                logger.debug(f"Content: '{text}'")
 
             # Step 4: Copy to clipboard
             if self.config.clipboard.enabled:
@@ -229,6 +259,9 @@ class STTService:
                     transcription_time=transcription_time,
                 )
 
+            # Reset idle timer after successful transcription
+            self._reset_idle_timer()
+
             return text
 
         except Exception as e:
@@ -236,7 +269,7 @@ class STTService:
             self.stats["failed_transcriptions"] += 1
             return None
 
-    async def run_daemon(self):
+    async def run_daemon(self) -> None:
         """Run service in daemon mode (wait for triggers)."""
         logger.info("Starting STT service in daemon mode...")
 
@@ -244,7 +277,7 @@ class STTService:
         await self.initialize()
 
         # Create callback that passes trigger type
-        async def trigger_callback(trigger_type: TriggerType):
+        async def trigger_callback(trigger_type: TriggerType) -> None:
             await self.process_request(trigger_type)
 
         # Create trigger server
@@ -267,7 +300,7 @@ class STTService:
         finally:
             await self.shutdown()
 
-    async def run_oneshot(self):
+    async def run_oneshot(self) -> int:
         """Run service in one-shot mode (single transcription)."""
         logger.info("Running in one-shot mode...")
 
@@ -285,8 +318,8 @@ class STTService:
         if text:
             logger.info("\n" + "=" * 60)
             logger.info("SUCCESS!")
-            logger.info(f"Transcribed: {text}")
-            logger.info(f"Characters: {len(text)}")
+            logger.info(f"Transcribed: {len(text)} chars")
+            logger.debug(f"Content: '{text}'")
             logger.info("Text is now in your clipboard (Ctrl+V to paste)")
             logger.info("=" * 60)
 
@@ -299,7 +332,7 @@ class STTService:
 
             return 1
 
-    async def run_continuous(self):
+    async def run_continuous(self) -> int:
         """Run service in continuous dictation mode.
 
         Continuously records and transcribes audio segments, copying each
@@ -346,7 +379,8 @@ class STTService:
                     detected_lang = self.transcriber.detected_language
                     text = self.punctuation_processor.process(text, detected_language=detected_lang)
 
-                logger.info(f"Transcribed: {text}")
+                logger.info(f"Transcribed: {len(text)} chars")
+                logger.debug(f"Content: '{text}'")
 
                 # Copy to clipboard
                 if self.config.clipboard.enabled:
@@ -387,9 +421,14 @@ class STTService:
 
         return 0
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """Shutdown service gracefully."""
         logger.info("Shutting down service...")
+
+        # Cancel idle timer
+        if self._idle_timer is not None:
+            self._idle_timer.cancel()
+            self._idle_timer = None
 
         # Stop trigger server
         if self.trigger_server:
@@ -415,7 +454,7 @@ class STTService:
         logger.info("Goodbye!")
 
 
-def setup_logging(config: Config):
+def setup_logging(config: Config) -> None:
     """Setup logging configuration.
 
     Args:
@@ -449,7 +488,7 @@ def setup_logging(config: Config):
     logger.info(f"Logging configured: level={config.logging.level}")
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
         description="STT Clipboard - Offline Speech-to-Text (French/English)"
@@ -565,7 +604,7 @@ def main():
         sys.exit(1)
 
 
-def main_tui():
+def main_tui() -> None:
     """Entry point for TUI mode (stt-tui command).
 
     This function provides a direct entry point for the TUI interface,
