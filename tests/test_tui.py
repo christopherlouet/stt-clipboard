@@ -242,7 +242,7 @@ class TestSTTAppCreation:
         from src.tui import STTApp
 
         app = STTApp(test_config)
-        binding_keys = [b[0] for b in app.BINDINGS]
+        binding_keys = [b[0] if isinstance(b, tuple) else b.key for b in app.BINDINGS]
         assert "r" in binding_keys  # Record
         assert "c" in binding_keys  # Continuous
         assert "s" in binding_keys  # Stop
@@ -276,3 +276,43 @@ class TestMainIntegration:
         parser.add_argument("--tui", action="store_true")
         args = parser.parse_args(["--tui"])
         assert args.tui is True
+
+
+class TestTranscriptionLogMaxLines:
+    """Tests for TranscriptionLog max_lines limit (T017)."""
+
+    def test_log_has_max_lines_attribute(self) -> None:
+        """Test that TranscriptionLog accepts max_lines parameter."""
+        log = TranscriptionLog(max_lines=50)
+        assert log.max_lines == 50
+
+    def test_log_default_max_lines(self) -> None:
+        """Test that default max_lines is 1000."""
+        log = TranscriptionLog()
+        assert log.max_lines == 1000
+
+    def test_log_has_line_count(self) -> None:
+        """Test that TranscriptionLog tracks line count."""
+        log = TranscriptionLog()
+        assert hasattr(log, "_line_count")
+        assert log._line_count == 0
+
+    def test_log_increments_line_count(self) -> None:
+        """Test that add_transcription increments line count."""
+        log = TranscriptionLog(max_lines=100)
+        log.add_transcription("Hello")
+        assert log._line_count == 1
+
+    def test_log_clears_when_exceeding_max_lines(self) -> None:
+        """Test that log clears when exceeding max_lines."""
+        log = TranscriptionLog(max_lines=3)
+
+        log.add_transcription("One")
+        log.add_transcription("Two")
+        log.add_transcription("Three")
+
+        # 4th entry should trigger clear
+        log.add_transcription("Four")
+
+        # Line count should be reset to 1 (the new entry)
+        assert log._line_count == 1

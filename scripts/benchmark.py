@@ -35,7 +35,7 @@ def generate_test_audio(duration: float = 5.0, sample_rate: int = 16000) -> np.n
     # Normalize
     audio = audio / np.abs(audio).max()
 
-    return audio
+    return np.asarray(audio)
 
 
 def benchmark_transcription(
@@ -86,7 +86,7 @@ def benchmark_transcription(
     return results
 
 
-def print_results(results: dict):
+def print_results(results: dict) -> None:  # type: ignore[type-arg]
     """Print benchmark results.
 
     Args:
@@ -118,7 +118,7 @@ def print_results(results: dict):
     print("=" * 60 + "\n")
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Benchmark STT Clipboard performance")
 

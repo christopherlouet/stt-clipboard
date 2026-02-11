@@ -388,7 +388,8 @@ class SettingsScreen(Screen):
     def _get_section(self, section_type: type[ConfigSection]) -> ConfigSection | None:
         """Get a section by type, returning None if not mounted."""
         try:
-            return self.query_one(section_type)
+            result: ConfigSection = self.query_one(section_type)
+            return result
         except Exception:  # noqa: S110  # nosec B110 - Section may not be mounted yet
             return None
 

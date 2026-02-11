@@ -60,3 +60,10 @@ history:
 hotkey:
   enabled: false               # Enable evdev hotkey (not needed with desktop keybind)
   socket_path: /tmp/stt-clipboard.sock  # Unix socket path for trigger
+
+# Memory management settings
+memory:
+  auto_unload_model: true      # Auto-unload Whisper model after idle timeout (default: true in TUI, false in daemon)
+  idle_timeout_seconds: 300    # Seconds of inactivity before unloading model (5 minutes)
+  max_tui_log_lines: 1000     # Maximum lines in TUI transcription log before cleanup
+  max_history_text_length: 1000  # Maximum characters per transcription in history (truncated with [...])

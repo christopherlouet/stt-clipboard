@@ -2,6 +2,9 @@
 
 import asyncio
 import os
+import threading
+import time
+from collections import deque
 from collections.abc import Awaitable, Callable
 from enum import Enum
 from pathlib import Path
@@ -16,6 +19,41 @@ class TriggerType(Enum):
     PASTE = "TRIGGER_PASTE"
     PASTE_TERMINAL = "TRIGGER_PASTE_TERMINAL"  # Ctrl+Shift+V for terminals
     UNKNOWN = "TRIGGER"  # Legacy support
+
+
+VALID_COMMANDS: frozenset[str] = frozenset(
+    {
+        "TRIGGER_COPY",
+        "TRIGGER_PASTE",
+        "TRIGGER_PASTE_TERMINAL",
+        "TRIGGER",
+    }
+)
+
+
+class RateLimiter:
+    """Sliding window rate limiter for trigger requests."""
+
+    def __init__(self, max_requests: int = 5, window_seconds: float = 10.0):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self._timestamps: deque[float] = deque()
+        self._lock = threading.Lock()
+
+    def allow(self) -> bool:
+        """Check if a request is allowed under the rate limit."""
+        now = time.monotonic()
+        with self._lock:
+            # Evict expired timestamps
+            cutoff = now - self.window_seconds
+            while self._timestamps and self._timestamps[0] <= cutoff:
+                self._timestamps.popleft()
+
+            if len(self._timestamps) >= self.max_requests:
+                return False
+
+            self._timestamps.append(now)
+            return True
 
 
 class TriggerServer:
@@ -36,10 +74,13 @@ class TriggerServer:
         self.on_trigger = on_trigger
         self.server: asyncio.Server | None = None
         self.is_running = False
+        self._rate_limiter = RateLimiter()
 
         logger.info(f"TriggerServer initialized: socket={socket_path}")
 
-    async def _handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    async def _handle_client(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
         """Handle client connection.
 
         Args:
@@ -50,11 +91,47 @@ class TriggerServer:
         logger.debug(f"Client connected: {addr}")
 
         try:
-            # Read trigger message
-            data = await reader.read(100)
-            message = data.decode("utf-8").strip()
+            # Rate limiting check
+            if not self._rate_limiter.allow():
+                logger.warning("Rate limit exceeded, rejecting request")
+                writer.write(b"RATE_LIMITED\n")
+                await writer.drain()
+                return
+
+            # Read data (up to 1024 bytes to detect oversized messages)
+            data = await reader.read(1024)
+
+            # Reject oversized messages (> 100 bytes)
+            if len(data) > 100:
+                logger.warning(f"Rejecting oversized message: {len(data)} bytes")
+                writer.write(b"REJECTED\n")
+                await writer.drain()
+                return
+
+            # Decode UTF-8 safely
+            try:
+                message = data.decode("utf-8").strip()
+            except UnicodeDecodeError:
+                logger.warning("Rejecting non-UTF8 data")
+                writer.write(b"REJECTED\n")
+                await writer.drain()
+                return
 
             logger.debug(f"Received trigger: {message}")
+
+            # Reject empty messages
+            if not message:
+                logger.warning("Rejecting empty message")
+                writer.write(b"REJECTED\n")
+                await writer.drain()
+                return
+
+            # Validate command against whitelist
+            if message not in VALID_COMMANDS:
+                logger.warning(f"Rejecting unknown command: {message}")
+                writer.write(b"REJECTED\n")
+                await writer.drain()
+                return
 
             # Parse trigger type
             if message == "TRIGGER_COPY":
@@ -64,9 +141,8 @@ class TriggerServer:
             elif message == "TRIGGER_PASTE_TERMINAL":
                 trigger_type = TriggerType.PASTE_TERMINAL
             else:
-                # Legacy support: treat "TRIGGER" and unknown messages as COPY
+                # "TRIGGER" legacy support
                 trigger_type = TriggerType.UNKNOWN
-                logger.debug(f"Unknown trigger message '{message}', treating as legacy TRIGGER")
 
             # Call trigger callback with type
             if self.on_trigger:
@@ -96,7 +172,7 @@ class TriggerServer:
                 logger.debug(f"Error closing connection: {e}")
             logger.debug("Client disconnected")
 
-    async def start(self):
+    async def start(self) -> None:
         """Start the trigger server."""
         if self.is_running:
             logger.warning("Server already running")
@@ -127,15 +203,16 @@ class TriggerServer:
             logger.error(f"Failed to start trigger server: {e}")
             raise RuntimeError(f"Server start failed: {e}")
 
-    async def serve_forever(self):
+    async def serve_forever(self) -> None:
         """Serve forever (run until cancelled)."""
         if not self.server:
             await self.start()
 
+        assert self.server is not None
         async with self.server:
             await self.server.serve_forever()
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the trigger server."""
         if not self.is_running:
             return
@@ -165,7 +242,7 @@ class TriggerServer:
         """
         trigger_event = asyncio.Event()
 
-        async def trigger_handler(trigger_type: TriggerType):
+        async def trigger_handler(trigger_type: TriggerType) -> None:
             trigger_event.set()
 
         # Set temporary handler
@@ -283,14 +360,14 @@ def send_trigger(
 if __name__ == "__main__":
     import sys
 
-    async def test_server():
+    async def test_server() -> None:
         """Test the trigger server."""
         print("Trigger Server Test")
         print("=" * 60)
 
         trigger_count = [0]  # Use list for closure
 
-        async def handle_trigger(trigger_type: TriggerType):
+        async def handle_trigger(trigger_type: TriggerType) -> None:
             trigger_count[0] += 1
             print(f"\n🎯 Trigger received! Type: {trigger_type.value} (count: {trigger_count[0]})")
 
@@ -321,7 +398,7 @@ if __name__ == "__main__":
             await server.stop()
             print(f"Total triggers received: {trigger_count[0]}")
 
-    async def test_client():
+    async def test_client() -> None:
         """Test the trigger client."""
         print("Trigger Client Test")
         print("=" * 60)

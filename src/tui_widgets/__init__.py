@@ -10,6 +10,7 @@ from src.tui_widgets.form_fields import (
     SwitchField,
     TextInput,
 )
+from src.tui_widgets.memory_panel import MemoryPanel
 from src.tui_widgets.section_forms import (
     AudioSection,
     ClipboardSection,
@@ -41,6 +42,8 @@ __all__ = [
     "LoggingSection",
     "HotkeySection",
     "HistorySection",
+    # Widgets
+    "MemoryPanel",
     # Dialogs
     "ConfirmDialog",
     "RestartWarningDialog",

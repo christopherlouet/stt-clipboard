@@ -1,5 +1,6 @@
 """Speech-to-text transcription using faster-whisper."""
 
+import gc
 import time
 from collections.abc import Iterator
 from pathlib import Path
@@ -98,6 +99,7 @@ class WhisperTranscriber:
             language = self.config.language if self.config.language else None
 
             # Transcribe
+            assert self.model is not None
             segments, info = self.model.transcribe(
                 audio,
                 language=language,
@@ -166,6 +168,7 @@ class WhisperTranscriber:
             language = self.config.language if self.config.language else None
 
             # Transcribe with timestamps
+            assert self.model is not None
             segments, info = self.model.transcribe(
                 audio,
                 language=language,
@@ -213,6 +216,7 @@ class WhisperTranscriber:
             language = self.config.language if self.config.language else None
 
             # Transcribe with streaming
+            assert self.model is not None
             segments, info = self.model.transcribe(
                 audio,
                 language=language,
@@ -268,10 +272,16 @@ class WhisperTranscriber:
             "load_time": self.load_time,
         }
 
+    @property
+    def is_loaded(self) -> bool:
+        """Check if model is currently loaded in memory."""
+        return self.model is not None
+
     def unload_model(self) -> None:
-        """Unload model from memory."""
+        """Unload model from memory and force garbage collection."""
         if self.model is not None:
             self.model = None
+            gc.collect()
             logger.info("Model unloaded from memory")
 
 

@@ -257,8 +257,8 @@ class TestTriggerServerExtended:
             assert not socket_file.exists()
 
     @pytest.mark.asyncio
-    async def test_unknown_trigger_message(self):
-        """Test handling of unknown trigger messages."""
+    async def test_unknown_trigger_message_rejected(self):
+        """Test that unknown trigger messages are rejected (strict validation)."""
         socket_path = "/tmp/test-stt-unknown-msg.sock"
         received_trigger = None
 
@@ -272,10 +272,11 @@ class TestTriggerServerExtended:
             await server.start()
 
             client = TriggerClient(socket_path=socket_path)
-            await client.send_trigger(trigger_type="UNKNOWN_MESSAGE", timeout=2.0)
+            success = await client.send_trigger(trigger_type="UNKNOWN_MESSAGE", timeout=2.0)
             await asyncio.sleep(0.1)
 
-            assert received_trigger == TriggerType.UNKNOWN
+            assert success is False
+            assert received_trigger is None
 
         finally:
             await server.stop()
@@ -446,6 +447,150 @@ class TestHandleClientErrors:
             assert success is True
             assert len(received_triggers) == 1
 
+        finally:
+            await server.stop()
+
+
+class TestCommandValidation:
+    """Tests for strict command validation (T011)."""
+
+    def test_valid_commands_constant_exists(self):
+        """Test that VALID_COMMANDS frozenset exists in hotkey module."""
+        from src.hotkey import VALID_COMMANDS
+
+        assert isinstance(VALID_COMMANDS, frozenset)
+        assert "TRIGGER_COPY" in VALID_COMMANDS
+        assert "TRIGGER_PASTE" in VALID_COMMANDS
+        assert "TRIGGER_PASTE_TERMINAL" in VALID_COMMANDS
+        assert "TRIGGER" in VALID_COMMANDS
+
+    @pytest.mark.asyncio
+    async def test_valid_commands_accepted(self):
+        """Test that all valid commands are accepted."""
+        socket_path = "/tmp/test-stt-valid-cmds.sock"
+        received = []
+
+        async def callback(trigger_type: TriggerType):
+            received.append(trigger_type)
+
+        server = TriggerServer(socket_path=socket_path, on_trigger=callback)
+
+        try:
+            await server.start()
+            client = TriggerClient(socket_path=socket_path)
+
+            for cmd in ["TRIGGER_COPY", "TRIGGER_PASTE", "TRIGGER_PASTE_TERMINAL", "TRIGGER"]:
+                await client.send_trigger(trigger_type=cmd, timeout=2.0)
+                await asyncio.sleep(0.1)
+
+            assert len(received) == 4
+        finally:
+            await server.stop()
+
+    @pytest.mark.asyncio
+    async def test_unknown_command_rejected(self):
+        """Test that unknown commands are rejected with warning."""
+        socket_path = "/tmp/test-stt-unknown-rejected.sock"
+        received = []
+
+        async def callback(trigger_type: TriggerType):
+            received.append(trigger_type)
+
+        server = TriggerServer(socket_path=socket_path, on_trigger=callback)
+
+        try:
+            await server.start()
+            client = TriggerClient(socket_path=socket_path)
+
+            success = await client.send_trigger(trigger_type="INVALID_COMMAND", timeout=2.0)
+            await asyncio.sleep(0.1)
+
+            # Should NOT call the callback for invalid commands
+            assert len(received) == 0
+            assert success is False
+        finally:
+            await server.stop()
+
+    @pytest.mark.asyncio
+    async def test_empty_message_rejected(self):
+        """Test that empty messages are rejected."""
+        socket_path = "/tmp/test-stt-empty-msg.sock"
+        received = []
+
+        async def callback(trigger_type: TriggerType):
+            received.append(trigger_type)
+
+        server = TriggerServer(socket_path=socket_path, on_trigger=callback)
+
+        try:
+            await server.start()
+            client = TriggerClient(socket_path=socket_path)
+
+            success = await client.send_trigger(trigger_type="", timeout=2.0)
+            await asyncio.sleep(0.1)
+
+            assert len(received) == 0
+            assert success is False
+        finally:
+            await server.stop()
+
+    @pytest.mark.asyncio
+    async def test_non_utf8_data_handled(self):
+        """Test that non-UTF8 data doesn't crash the server."""
+        socket_path = "/tmp/test-stt-non-utf8.sock"
+        received = []
+
+        async def callback(trigger_type: TriggerType):
+            received.append(trigger_type)
+
+        server = TriggerServer(socket_path=socket_path, on_trigger=callback)
+
+        try:
+            await server.start()
+
+            # Send raw non-UTF8 bytes directly
+            reader, writer = await asyncio.open_unix_connection(socket_path)
+            writer.write(b"\xff\xfe\xfd\n")
+            await writer.drain()
+
+            # Read response
+            response = await asyncio.wait_for(reader.read(100), timeout=2.0)
+            writer.close()
+            await writer.wait_closed()
+            await asyncio.sleep(0.1)
+
+            # Server should not crash and should reject the data
+            assert len(received) == 0
+            assert b"REJECTED" in response
+        finally:
+            await server.stop()
+
+    @pytest.mark.asyncio
+    async def test_too_long_message_rejected(self):
+        """Test that messages > 100 bytes are rejected."""
+        socket_path = "/tmp/test-stt-long-msg.sock"
+        received = []
+
+        async def callback(trigger_type: TriggerType):
+            received.append(trigger_type)
+
+        server = TriggerServer(socket_path=socket_path, on_trigger=callback)
+
+        try:
+            await server.start()
+
+            # Send a very long message directly
+            reader, writer = await asyncio.open_unix_connection(socket_path)
+            writer.write(b"A" * 200 + b"\n")
+            await writer.drain()
+
+            response = await asyncio.wait_for(reader.read(100), timeout=2.0)
+            writer.close()
+            await writer.wait_closed()
+            await asyncio.sleep(0.1)
+
+            assert len(received) == 0
+            assert b"REJECTED" in response
         finally:
             await server.stop()
 
