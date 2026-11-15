@@ -1,5 +1,10 @@
 # STT Clipboard - Offline Speech-to-Text (Multilingual)
 
+> **Project status: paused since February 2026.** Version 1.4.3 works and stays available,
+> but the project is no longer actively maintained: no new features, no dependency updates,
+> and issues and pull requests are not monitored. Its dependencies (PyTorch 2.5,
+> faster-whisper 1.1) date from early 2026. You are welcome to fork it.
+
 [![Version](https://img.shields.io/badge/version-1.4.3-blue.svg)](https://github.com/christopherlouet/stt-clipboard/releases/tag/v1.4.3)
 [![CI](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml/badge.svg)](https://github.com/christopherlouet/stt-clipboard/actions/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-MkDocs-blue.svg)](https://christopherlouet.github.io/stt-clipboard/)
